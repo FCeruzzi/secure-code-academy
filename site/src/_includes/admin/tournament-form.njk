@@ -1,0 +1,35 @@
+{% import "forms.njk" as f %}
+<div x-data="adminTournamentForm">
+{% include "partials/loading.njk" %}
+<template x-if="state === 'ready'">
+<div>
+<div class="flex items-center justify-between gap-4 mb-6"><h1 class="text-2xl font-bold" x-text="title"></h1></div>
+<form @submit.prevent="submit()" class="max-w-2xl">
+  {{ f.input("title", "Titolo", required=true, attrs='maxlength="200"') }}
+  {{ f.input("slug", "Slug", help="Lascia vuoto per generarlo dal titolo.", attrs='maxlength="210"') }}
+  {{ f.textarea("description", "Descrizione", rows=3) }}
+  <div class="mb-4">
+    <label class="block text-sm font-medium mb-2 text-slate-300">Corsi</label>
+    <div class="space-y-1.5 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
+      <template x-for="c in allCourses" :key="c.id">
+        <label class="flex items-center gap-2 text-sm text-slate-200"><input type="checkbox" :value="String(c.id)" x-model="form.courses" class="h-4 w-4 rounded border-slate-600 bg-slate-900 accent-emerald-500"> <span x-text="c.title"></span></label>
+      </template>
+      <template x-if="!allCourses.length"><p class="text-sm text-slate-500">Nessun corso disponibile. Crea prima dei corsi.</p></template>
+    </div>
+    <p class="text-xs text-slate-500 mt-1">Le domande vengono estratte casualmente dalla banca dei corsi selezionati. Quelle usate nei quiz dei microcorsi sono escluse: il quiz pubblico ne mostra la soluzione.</p>
+    {{ f.errorsOf("courses") }}
+  </div>
+  {{ f.input("pool_size", "Domande per round", type="number", help="Quante domande per round estrarre dal pool.", attrs='min="1"') }}
+  {{ f.input("num_rounds", "Numero di round", type="number", required=true, help="Numero di round; i punteggi si sommano tra i round.", attrs='min="1"') }}
+  {{ f.input("per_question_seconds", "Secondi per domanda", type="number", required=true, help="Secondi a disposizione per ogni domanda (default 60).", attrs='min="1"') }}
+  {{ f.input("reveal_seconds", "Secondi di reveal", type="number", required=true, help="Per quanti secondi la risposta corretta resta visibile a tutti prima della domanda successiva (default 5).", attrs='min="0"') }}
+  {{ f.input("points_correct", "Punti per risposta corretta", type="number", required=true, help="Punti base per ogni risposta corretta; su questi si calcola anche l'eventuale bonus velocità.", attrs='min="0"') }}
+  {{ f.checkbox("time_bonus", "Bonus velocità", help="Assegna punti extra proporzionali al tempo rimasto: chi risponde subito arriva quasi a raddoppiare i punti, chi risponde allo scadere non prende bonus.") }}
+  <div class="flex gap-3 mt-6">
+    <button type="submit" :disabled="busy" class="rounded-lg bg-emerald-500 px-5 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-60">💾 Salva</button>
+    <a href="/admin/tornei/" class="rounded-lg border border-slate-700 px-5 py-2.5 hover:bg-slate-800 transition">Annulla</a>
+  </div>
+</form>
+</div>
+</template>
+</div>

@@ -1,0 +1,29 @@
+{
+  "name": "sca-api",
+  "private": true,
+  "version": "1.0.0",
+  "description": "API di Secure Code Academy su Cloudflare Workers (D1 + Durable Objects).",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "admin:sql": "tsx scripts/create-admin.ts"
+  },
+  "dependencies": {
+    "highlight.js": "^11.12.0",
+    "hono": "^4.13.13",
+    "markdown-it": "^15.0.2"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.22.0",
+    "@cloudflare/workers-types": "^5.20261006.1",
+    "@types/markdown-it": "^14.2.0",
+    "@types/node": "^26.6.4",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "~4.1.0",
+    "wrangler": "^4.148.0"
+  }
+}

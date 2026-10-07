@@ -1,0 +1,9 @@
+---
+layout: layouts/base.njk
+title: Microcorso · Secure Code Academy
+---
+{#- Un microcorso è un percorso lineare: si va subito alla prima slide, o al quiz
+    se non ha slide, come il redirect di microcourse_detail nella versione Django. #}
+<div x-data="microcoursePage" x-init="load()">
+{% include "partials/loading.njk" %}
+</div>

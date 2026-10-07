@@ -1,0 +1,22 @@
+{#- Anteprima in sola lettura con la soluzione (_question_preview.html). Scope:
+    preview = { question, solution, explanation_html, meta }. #}
+<div class="space-y-3" x-data="{ get q() { return preview?.question }, get rv() { return { solution: preview?.solution, submitted: {} } } }">
+  <div class="flex flex-wrap items-center gap-2 text-xs">
+    <span class="rounded bg-slate-800 px-2 py-0.5" :title="q?.qtype_label" x-text="`${qtypeEmoji(q?.qtype)} ${q?.qtype_label}`"></span>
+    <span class="text-slate-400" x-text="preview?.meta?.course_title || '—'"></span>
+    <span x-text="difficultyStars(preview?.meta?.difficulty)"></span>
+    <template x-if="preview?.solution?.language"><span class="rounded bg-slate-800 px-2 py-0.5 text-slate-300" x-text="languageLabel(preview?.solution?.language)"></span></template>
+  </div>
+
+  <div class="prose prose-invert prose-sm max-w-none prose-p:my-1" x-html="q?.prompt_html"></div>
+
+  <template x-if="q?.qtype === 'TRUE_FALSE'">
+    <div class="prose prose-invert prose-sm max-w-none rounded-lg border border-slate-800 bg-slate-950/60 p-3" x-html="q?.statement_html"></div>
+  </template>
+
+  {% include "partials/answer-reveal.njk" %}
+
+  <template x-if="preview?.explanation_html">
+    <div class="text-xs text-slate-400 border-t border-slate-800 pt-2"><span class="text-slate-300 font-medium">Spiegazione:</span> <span class="prose prose-invert prose-sm" x-html="preview?.explanation_html"></span></div>
+  </template>
+</div>

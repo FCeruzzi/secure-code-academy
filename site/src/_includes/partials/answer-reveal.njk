@@ -1,0 +1,59 @@
+{#- Risposta corretta più la scelta di chi ha risposto. Scope Alpine: q, rv
+    (con rv?.solution e rv?.submitted). #}
+<template x-if="q?.qtype === 'TRUE_FALSE'">
+  <p class="text-sm">Risposta corretta:
+    <strong class="text-emerald-300" x-text="rv?.solution?.answer ? 'Vero' : 'Falso'"></strong></p>
+</template>
+
+<template x-if="q?.qtype === 'MULTIPLE_CHOICE'">
+  <div class="space-y-2">
+    <template x-for="opt in (q?.options || [])" :key="opt.id">
+      <div class="rounded-lg border p-3 flex items-center gap-3"
+        :class="(rv?.solution?.correct || []).includes(opt.id) ? 'border-emerald-500/60 bg-emerald-500/10' : ((rv?.submitted?.selected || []).includes(opt.id) ? 'border-rose-500/60 bg-rose-500/10' : 'border-slate-800')">
+        <span class="font-mono text-xs uppercase text-slate-500" x-text="opt.id"></span>
+        <span class="flex-1" x-text="opt.text"></span>
+        <template x-if="(rv?.solution?.correct || []).includes(opt.id)"><span class="text-emerald-400">✓</span></template>
+        <template x-if="!(rv?.solution?.correct || []).includes(opt.id) && (rv?.submitted?.selected || []).includes(opt.id)"><span class="text-rose-400">✗</span></template>
+      </div>
+    </template>
+  </div>
+</template>
+
+<template x-if="q?.qtype === 'FIND_WRONG_LINE'">
+  <div>
+    <div class="rounded-xl border border-slate-800 bg-slate-950 max-h-[46vh] overflow-y-auto text-sm leading-6">
+      <template x-for="line in (q?.code_lines || [])" :key="line.number">
+        <div class="flex gap-3 px-3 py-0.5"
+          :class="(rv?.solution?.correct_lines || []).includes(line.number) ? 'bg-emerald-500/20' : ((rv?.submitted?.lines || []).includes(line.number) ? 'bg-rose-500/20' : '')">
+          <span class="w-8 shrink-0 text-right text-slate-600 select-none" x-text="line.number"></span>
+          <span class="highlight whitespace-pre overflow-x-auto" x-html="line.html"></span>
+        </div>
+      </template>
+    </div>
+    <p class="text-sm mt-2">Riga/e corretta/e: <strong class="text-emerald-300" x-text="(rv?.solution?.correct_lines || []).join(', ')"></strong></p>
+  </div>
+</template>
+
+<template x-if="q?.qtype === 'CODE_COMPARISON'">
+  <div x-data="{ f: 0 }" class="overflow-hidden rounded-xl border border-emerald-500/50">
+    <div class="flex items-center gap-2 border-b border-slate-700 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-300">
+      ✓ Versione corretta: <span x-text="rv?.solution?.correct === 'a' ? q?.label_a : q?.label_b"></span>
+    </div>
+    <div class="flex">
+      <div class="w-36 shrink-0 border-r border-slate-800 bg-slate-950/70 py-1 max-h-[46vh] overflow-y-auto">
+        <template x-for="(file, i) in ((rv?.solution?.correct === 'a' ? q?.files_a : q?.files_b) || [])" :key="i">
+          <button type="button" @click="f = i"
+            :class="f === i ? 'bg-slate-800 text-emerald-300' : 'text-slate-400 hover:bg-slate-800/50'"
+            class="flex w-full items-center gap-1.5 px-2.5 py-1 text-left font-mono text-xs">
+            <span class="text-slate-600">📄</span><span class="truncate" x-text="file.name || 'codice'"></span>
+          </button>
+        </template>
+      </div>
+      <div class="min-w-0 flex-1 bg-slate-950">
+        <template x-for="(file, i) in ((rv?.solution?.correct === 'a' ? q?.files_a : q?.files_b) || [])" :key="i">
+          <pre x-show="f === i" class="highlight max-h-[46vh] overflow-auto p-3 text-sm leading-6"><code x-html="file.html"></code></pre>
+        </template>
+      </div>
+    </div>
+  </div>
+</template>

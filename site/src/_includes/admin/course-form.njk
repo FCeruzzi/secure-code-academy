@@ -1,0 +1,104 @@
+{% import "forms.njk" as f %}
+<div x-data="adminCourseForm">
+{% include "partials/loading.njk" %}
+<template x-if="state === 'ready'">
+<div>
+<div class="flex items-center justify-between gap-4 mb-6"><h1 class="text-2xl font-bold" x-text="title"></h1></div>
+<nav class="text-sm text-slate-400 mb-6"><a href="/admin/corsi/" class="hover:text-slate-200">← Corsi</a></nav>
+
+<template x-if="!course">
+<p class="max-w-2xl mb-5 rounded-lg border border-sky-500/30 bg-sky-500/5 px-4 py-3 text-sm text-sky-200">
+  Salva il corso per passare al <strong>passo 2</strong>: potrai aggiungere il link alla presentazione,
+  quello al laboratorio e le risorse consigliate.
+</p>
+</template>
+
+<form @submit.prevent="submit()" class="max-w-2xl">
+  {{ f.input("title", "Titolo", required=true, attrs='maxlength="200"') }}
+  {{ f.input("slug", "Slug", help="Lascia vuoto per generarlo automaticamente dal titolo.", attrs='maxlength="210"') }}
+  {{ f.input("icon", "Icona (emoji)", attrs='maxlength="16" placeholder="es. 🛡️"') }}
+  {{ f.textarea("description", "Descrizione", rows=3) }}
+  <template x-if="course">{{ f.input("lab_url", "Link al laboratorio", type="url", attrs='placeholder="https://github.com/..."') }}</template>
+  {{ f.input("order", "Order", type="number", required=true, attrs='min="0"') }}
+  {{ f.checkbox("is_published", "Pubblicato", help="Se attivo il corso è visibile nel catalogo pubblico; altrimenti resta una bozza visibile solo qui nel pannello.") }}
+  <div class="flex gap-3 mt-6">
+    <button type="submit" :disabled="busy" class="rounded-lg bg-emerald-500 px-5 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-60">💾 Salva</button>
+    <a href="/admin/corsi/" class="rounded-lg border border-slate-700 px-5 py-2.5 hover:bg-slate-800 transition">Annulla</a>
+  </div>
+</form>
+
+<template x-if="course">
+<div class="mt-10 border-t border-slate-800 pt-8">
+  <div class="flex items-center justify-between mb-1">
+    <h2 class="text-lg font-semibold">Materiale del corso</h2>
+    <a :href="url('admin/microcorsi/', { corso: course.id })" class="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-800">Microcorsi →</a>
+  </div>
+  <p class="text-sm text-slate-500 mb-5">Presentazione, laboratorio e risorse mostrati nella pagina pubblica del corso.</p>
+
+  <div class="grid lg:grid-cols-2 gap-6">
+    <section class="rounded-xl border border-slate-800 bg-slate-900/40 p-5">
+      <h3 class="font-semibold mb-2">🧪 Laboratorio</h3>
+      <template x-if="course.lab_url">
+        <a :href="$safeUrl(course.lab_url)" target="_blank" rel="noopener noreferrer" class="text-sm text-emerald-300 hover:underline break-all" x-text="course.lab_url"></a>
+      </template>
+      <template x-if="!course.lab_url">
+        <p class="text-sm text-slate-500">Nessun link. Impostalo nel campo <em>Link al laboratorio</em> qui sopra.</p>
+      </template>
+
+      <h3 class="font-semibold mt-6 mb-3">📊 Presentazione</h3>
+      <div class="space-y-2 mb-3">
+        <template x-for="p in presentations" :key="p.id">
+          <div class="flex items-center justify-between gap-2 rounded-lg border border-slate-800 px-3 py-2 text-sm">
+            <span class="truncate"><span x-text="p.title || p.url"></span> <span class="text-xs text-slate-500" x-text="p.page_count ? `(${p.page_count} pagine)` : ''"></span></span>
+            <span class="flex items-center gap-3 shrink-0">
+              <a :href="$safeUrl(p.url)" target="_blank" rel="noopener" class="text-xs text-sky-300 hover:underline">Apri</a>
+              <button type="button" @click="removePresentation(p)" title="Elimina" aria-label="Elimina" class="inline-flex items-center text-rose-300 hover:text-rose-200">{% include "partials/icon-trash.njk" %}</button>
+            </span>
+          </div>
+        </template>
+        <template x-if="!presentations.length"><p class="text-sm text-slate-500">Nessuna presentazione.</p></template>
+      </div>
+      <form @submit.prevent="addPresentation()" class="space-y-2">
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-1 text-slate-300">Titolo</label>
+          <input type="text" x-model="pres.title" maxlength="200" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-none font-[inherit]">
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-1 text-slate-300">Link al PDF <span class="text-rose-400">*</span></label>
+          <input type="url" x-model="pres.url" required maxlength="500" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-none font-[inherit]">
+          <p class="text-xs text-slate-500 mt-1">Link diretto al PDF già pubblicato online (deve terminare con .pdf). Viene mostrato dentro la pagina, quindi l'host non deve vietare l'inclusione in iframe.</p>
+          <template x-for="e in (presErrors.url || [])"><p class="text-xs text-rose-400 mt-1" x-text="e"></p></template>
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-1 text-slate-300">Numero di pagine <span class="text-rose-400">*</span></label>
+          <input type="number" min="0" x-model="pres.page_count" required class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-none font-[inherit]">
+          <p class="text-xs text-slate-500 mt-1">Facoltativo: se lo indichi viene mostrato accanto al titolo.</p>
+        </div>
+        <button class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400">+ Aggiungi presentazione (link a un PDF)</button>
+      </form>
+    </section>
+
+    <section class="rounded-xl border border-slate-800 bg-slate-900/40 p-5">
+      <h3 class="font-semibold mb-3">🔗 Risorse consigliate</h3>
+      <p class="text-xs text-slate-500 mb-3">Link a materiale open-source (OWASP, Burp Academy, ecc.).</p>
+      <div class="space-y-2 mb-4">
+        <template x-for="r in resources" :key="r.id">
+          <div class="flex items-center justify-between gap-2 rounded-lg border border-slate-800 px-3 py-2 text-sm">
+            <a :href="$safeUrl(r.url)" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:underline truncate" x-text="r.title"></a>
+            <button type="button" @click="removeResource(r)" title="Elimina" aria-label="Elimina" class="inline-flex items-center text-rose-300 hover:text-rose-200 shrink-0">{% include "partials/icon-trash.njk" %}</button>
+          </div>
+        </template>
+        <template x-if="!resources.length"><p class="text-sm text-slate-500">Nessuna risorsa.</p></template>
+      </div>
+      <form @submit.prevent="addResource()" class="space-y-2">
+        <input type="text" x-model="res.title" placeholder="Titolo (es. OWASP ... Cheat Sheet)" required class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-slate-100">
+        <input type="url" x-model="res.url" placeholder="https://..." required class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-slate-100">
+        <button class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400">+ Aggiungi risorsa</button>
+      </form>
+    </section>
+  </div>
+</div>
+</template>
+</div>
+</template>
+</div>

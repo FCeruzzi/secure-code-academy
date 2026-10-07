@@ -1,0 +1,81 @@
+---
+layout: layouts/admin.njk
+title: Amministratori · Pannello
+navActive: amministratori
+---
+{% import "forms.njk" as f %}
+<div x-data="adminAdmins">
+<div class="flex items-center justify-between gap-4 mb-6">
+  <h1 class="text-2xl font-bold">Amministratori</h1>
+  <div class="flex items-center gap-2">
+    <a href="/admin/registro/" class="rounded-lg border border-slate-700 px-4 py-2 text-sm hover:bg-slate-800 transition">📜 Registro attività</a>
+    <template x-if="available.length">
+      <a href="/admin/amministratori/nuovo/" class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400 transition">➕ Nuovo</a>
+    </template>
+  </div>
+</div>
+{% include "partials/loading.njk" %}
+<template x-if="state === 'ready'">
+<div>
+{% include "admin/temp-password.njk" %}
+<template x-if="pending">
+<form @submit.prevent="confirmPending()" class="mb-6 rounded-xl border border-slate-700 bg-slate-900 p-4 max-w-xl">
+  <p class="text-sm text-slate-300 mb-3" x-text="pending.label"></p>
+  <label for="f-confirm_password" class="block text-sm font-medium mb-1 text-slate-300">La tua password</label>
+  <input id="f-confirm_password" type="password" x-model="form.confirm_password" required autocomplete="current-password" x-init="$el.focus()"
+         class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-none font-[inherit]">
+  {{ f.errorsOf("confirm_password") }}
+  <div class="flex gap-3 mt-4">
+    <button type="submit" :disabled="busy" class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-60">Conferma</button>
+    <button type="button" @click="cancelPending()" class="rounded-lg border border-slate-700 px-4 py-2 text-sm hover:bg-slate-800 transition">Annulla</button>
+  </div>
+</form>
+</template>
+<div class="overflow-x-auto rounded-xl border border-slate-800">
+  <table class="w-full text-sm">
+    <thead class="bg-slate-900/70 text-slate-400 text-left">
+      <tr><th class="px-4 py-3">Username</th><th class="px-4 py-3">Email</th><th class="px-4 py-3">Stato</th><th class="px-4 py-3">Ultimo accesso</th><th class="px-4 py-3"></th></tr>
+    </thead>
+    <tbody class="divide-y divide-slate-800">
+      <template x-for="a in admins" :key="a.id">
+        <tr>
+          <td class="px-4 py-3">
+            <div class="font-medium" x-text="a.username"></div>
+            <template x-if="a.id === me"><span class="text-xs text-emerald-400">tu</span></template>
+          </td>
+          <td class="px-4 py-3 text-slate-400" x-text="a.email || '—'"></td>
+          <td class="px-4 py-3">
+            <template x-if="a.is_active"><span class="rounded-md bg-emerald-500/15 text-emerald-300 px-2 py-0.5 text-xs">Attivo</span></template>
+            <template x-if="!a.is_active"><span class="rounded-md bg-slate-700 text-slate-300 px-2 py-0.5 text-xs">Disattivato</span></template>
+            <template x-if="a.must_change_password"><span class="ml-1 rounded-md bg-amber-500/15 text-amber-300 px-2 py-0.5 text-xs" title="Usa ancora la password temporanea">Da configurare</span></template>
+          </td>
+          <td class="px-4 py-3 text-slate-400" x-text="formatDateTime(a.last_login)"></td>
+          <td class="px-4 py-3 text-right">
+            <template x-if="a.id === me">
+              <a :href="url('admin/amministratori/modifica/', { id: a.id })" title="Modifica la tua email" aria-label="Modifica la tua email" class="inline-flex items-center rounded-md border border-slate-700 px-2 py-1.5 hover:bg-slate-800 align-middle">{% include "partials/icon-pencil.njk" %}</a>
+            </template>
+            <template x-if="a.id !== me">
+              <span>
+                <button type="button" @click="resetPassword(a)" class="text-xs rounded-md border border-slate-700 px-3 py-1 hover:bg-slate-800" title="Se ha perso la password">Reimposta password</button>
+                <button type="button" @click="toggle(a)" class="text-xs rounded-md border border-slate-700 px-3 py-1 hover:bg-slate-800" x-text="a.is_active ? 'Disattiva' : 'Riattiva'"></button>
+              </span>
+            </template>
+          </td>
+        </tr>
+      </template>
+      <template x-if="!admins.length">
+        <tr><td colspan="5" class="px-4 py-6 text-center text-slate-500">Nessun amministratore.</td></tr>
+      </template>
+    </tbody>
+  </table>
+</div>
+
+<p class="mt-4 text-xs text-slate-500">
+  Gli username autorizzati sono fissati nella configurazione del server
+  (<code>ADMIN_USERNAMES</code>): nessun altro account può accedere al pannello. «Reimposta
+  password» genera una password temporanea nuova, valida 24 ore, e chiude le sessioni del collega.
+  Le azioni sugli altri account chiedono la tua password e finiscono nel registro attività.
+</p>
+</div>
+</template>
+</div>

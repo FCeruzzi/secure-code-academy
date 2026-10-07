@@ -1,0 +1,40 @@
+---
+layout: layouts/admin.njk
+title: Tornei · Pannello
+navActive: tornei
+---
+<div x-data="adminTournamentList">
+<div class="flex items-center justify-between gap-4 mb-6">
+  <h1 class="text-2xl font-bold">Tornei</h1>
+  <div class="flex items-center gap-2">
+    <a href="/admin/tornei/nuovo/" class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400 transition">➕ Nuovo torneo</a>
+  </div>
+</div>
+{% include "partials/loading.njk" %}
+<template x-if="state === 'ready'">
+<div class="overflow-x-auto rounded-xl border border-slate-800">
+  <table class="w-full text-sm">
+    <thead class="bg-slate-900/70 text-slate-400 text-left">
+      <tr><th class="px-4 py-3">Torneo</th><th class="px-4 py-3">Stato</th><th class="px-4 py-3">Partecipanti</th><th class="px-4 py-3"></th></tr>
+    </thead>
+    <tbody class="divide-y divide-slate-800">
+      <template x-for="t in tournaments" :key="t.id">
+        <tr>
+          <td class="px-4 py-3"><span class="font-medium" x-text="t.title"></span><div class="text-xs text-slate-500" x-text="`${t.course_count} cors${t.course_count === 1 ? 'o' : 'i'}`"></div></td>
+          <td class="px-4 py-3"><span class="rounded bg-slate-800 px-2 py-0.5 text-xs" x-text="statusLabel(t.status)"></span></td>
+          <td class="px-4 py-3" x-text="t.participant_count"></td>
+          <td class="px-4 py-3 text-right whitespace-nowrap">
+            <a :href="url('admin/tornei/gestisci/', { id: t.id })" class="text-xs rounded-md bg-slate-800 px-3 py-1.5 hover:bg-slate-700">Gestisci</a>
+            <a :href="url('admin/tornei/modifica/', { id: t.id })" title="Modifica" aria-label="Modifica" class="inline-flex items-center rounded-md border border-slate-700 px-2 py-1.5 hover:bg-slate-800">{% include "partials/icon-pencil.njk" %}</a>
+            <button type="button" @click="remove(t)" title="Elimina" aria-label="Elimina" class="inline-flex items-center rounded-md border border-rose-700/50 text-rose-300 px-2 py-1.5 hover:bg-rose-500/10">{% include "partials/icon-trash.njk" %}</button>
+          </td>
+        </tr>
+      </template>
+      <template x-if="!tournaments.length">
+        <tr><td colspan="4" class="px-4 py-6 text-center text-slate-500">Nessun torneo.</td></tr>
+      </template>
+    </tbody>
+  </table>
+</div>
+</template>
+</div>

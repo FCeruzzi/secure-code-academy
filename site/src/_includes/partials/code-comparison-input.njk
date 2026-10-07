@@ -1,0 +1,32 @@
+{#- CODE_COMPARISON in risposta: due «editor» a più file, si sceglie cliccando il
+    pannello (il radio). Richiede nello scope Alpine: q, sel; `required` per il quiz. #}
+<div class="grid gap-4 lg:grid-cols-2">
+  <template x-for="side in ['a', 'b']" :key="side">
+    <label class="cursor-pointer block" :class="(side === 'a') !== Boolean(q?.cc_swap) ? 'order-1' : 'order-2'">
+      <input type="radio" name="choice" :value="side" x-model="sel.choice" class="peer sr-only" {% if variant == 'quiz' %}required{% endif %} @change="changed()">
+      <div x-data="{ f: 0 }"
+           class="overflow-hidden rounded-xl border border-slate-700 transition peer-checked:border-sky-500 peer-checked:ring-2 peer-checked:ring-sky-500/40">
+        <div class="flex items-center justify-between border-b border-slate-700 bg-slate-800/60 px-3 py-2 text-xs font-semibold">
+          <span class="flex items-center gap-2"><span class="flex gap-1"><span class="h-2.5 w-2.5 rounded-full bg-rose-400/70"></span><span class="h-2.5 w-2.5 rounded-full bg-amber-400/70"></span><span class="h-2.5 w-2.5 rounded-full bg-emerald-400/70"></span></span><span x-text="side === 'a' ? q?.label_a : q?.label_b"></span></span>
+        </div>
+        <div class="flex">
+          <div class="w-36 shrink-0 border-r border-slate-800 bg-slate-950/70 py-1 h-[calc(100vh-25rem)] min-h-[18rem] overflow-y-auto">
+            <template x-for="(file, i) in ((side === 'a' ? q?.files_a : q?.files_b) || [])" :key="i">
+              <button type="button" @click.prevent="f = i"
+                :class="f === i ? 'bg-slate-800 text-emerald-300' : 'text-slate-400 hover:bg-slate-800/50'"
+                class="flex w-full items-center gap-1.5 px-2.5 py-1 text-left font-mono text-xs">
+                <span class="text-slate-600">📄</span><span class="truncate" x-text="file.name || 'codice'"></span>
+              </button>
+            </template>
+          </div>
+          <div class="min-w-0 flex-1 bg-slate-950 h-[calc(100vh-25rem)] min-h-[18rem]">
+            <template x-for="(file, i) in ((side === 'a' ? q?.files_a : q?.files_b) || [])" :key="i">
+              <pre x-show="f === i" class="highlight h-full overflow-auto p-3 text-sm leading-6"><code x-html="file.html"></code></pre>
+            </template>
+          </div>
+        </div>
+      </div>
+    </label>
+  </template>
+</div>
+<p class="mt-3 text-xs text-slate-500">📁 Naviga i file con il menu a lato di ogni versione, poi <strong>seleziona la versione sicura/corretta</strong> cliccando sul suo pannello.</p>

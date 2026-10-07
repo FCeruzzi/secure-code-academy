@@ -1,0 +1,17 @@
+---
+layout: layouts/base.njk
+title: Classifica · Torneo
+---
+<div x-data="tournamentPage('leaderboard')" x-init="load()">
+{% include "partials/loading.njk" %}
+<template x-if="state === 'ready'">
+<div class="max-w-xl mx-auto">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold">🏅 Classifica</h1>
+    <span class="text-xs text-slate-500 flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span> in tempo reale</span>
+  </div>
+  <p class="text-slate-400 text-sm mb-4" x-text="t.title"></p>
+  {% include "partials/leaderboard.njk" %}
+</div>
+</template>
+</div>

@@ -1,0 +1,120 @@
+---
+layout: layouts/admin.njk
+title: Report torneo · Pannello
+navActive: tornei
+---
+<div x-data="adminTournamentReport">
+{% include "partials/loading.njk" %}
+<template x-if="state === 'ready'">
+<div>
+<div class="flex items-center justify-between gap-4 mb-6">
+  <h1 class="text-2xl font-bold" x-text="`📊 Report · ${t.title}`"></h1>
+  <div class="flex items-center gap-2">
+    <a :href="url('admin/tornei/gestisci/', { id: t.id })" class="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-800">← Gestione</a>
+  </div>
+</div>
+<nav class="text-sm text-slate-400 mb-6"><a :href="url('admin/tornei/gestisci/', { id: t.id })" class="hover:text-slate-200">← <span x-text="t.title"></span></a></nav>
+
+<template x-if="report.total_answers === 0">
+  <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-8 text-center text-slate-400">
+    Nessuna risposta registrata: il report sarà disponibile dopo che la gara è stata giocata.
+  </div>
+</template>
+
+<template x-if="report.total_answers > 0">
+<div>
+<section class="grid sm:grid-cols-3 gap-4 mb-6">
+  <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-5">
+    <div class="text-3xl font-bold text-emerald-300" x-text="`${report.overall_pct}%`"></div>
+    <div class="text-sm text-slate-400 mt-1">Risposte corrette (media generale)</div>
+  </div>
+  <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-5">
+    <div class="text-3xl font-bold" x-text="report.part_rows.length"></div>
+    <div class="text-sm text-slate-400 mt-1">Partecipanti</div>
+  </div>
+  <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-5">
+    <div class="text-3xl font-bold"><span x-text="report.total_correct"></span><span class="text-slate-500 text-xl" x-text="`/${report.total_answers}`"></span></div>
+    <div class="text-sm text-slate-400 mt-1">Risposte corrette / totali</div>
+  </div>
+</section>
+
+<section class="rounded-xl border border-slate-800 bg-slate-900/40 p-5 mb-6">
+  <h2 class="font-semibold mb-4">📚 Statistiche per corso</h2>
+  <p class="text-xs text-slate-500 mb-4">Percentuale di risposte corrette su ogni corso — quanto ne sanno in media i partecipanti.</p>
+  <div class="space-y-4">
+    <template x-for="row in report.topic_rows" :key="row.name">
+      <div>
+        <div class="flex items-center justify-between text-sm mb-1">
+          <span class="font-medium" x-text="row.name"></span>
+          <span class="font-mono" :class="pctColor(row.pct)"><span x-text="`${row.pct}% `"></span><span class="text-slate-500" x-text="`(${row.correct}/${row.total})`"></span></span>
+        </div>
+        <div class="h-2.5 w-full rounded-full bg-slate-800 overflow-hidden">
+          <div class="h-full" :class="pctColor(row.pct, 'bg')" :style="`width: ${row.pct}%`"></div>
+        </div>
+        <template x-if="row.timed_out"><div class="text-xs text-slate-500 mt-1" x-text="`⏱ ${row.timed_out} senza risposta nei tempi`"></div></template>
+      </div>
+    </template>
+  </div>
+</section>
+
+<section class="rounded-xl border border-slate-800 bg-slate-900/40 p-5">
+  <h2 class="font-semibold mb-1">👥 Dettaglio per partecipante</h2>
+  <p class="text-xs text-slate-500 mb-4">Clicca un partecipante per vedere le sue risposte con la soluzione corretta e la spiegazione.</p>
+  <div class="space-y-2">
+    <template x-for="row in report.part_rows" :key="row.p.id">
+      <div class="rounded-xl border border-slate-800 overflow-hidden">
+        <button type="button" @click="open = open === row.p.id ? null : row.p.id"
+          class="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-slate-800/40 transition">
+          <span class="flex items-center gap-3 min-w-0">
+            <span class="text-xl" x-text="avatar(row.p.avatar_key)"></span>
+            <span class="font-medium truncate" x-text="row.p.display_name"></span>
+          </span>
+          <span class="flex items-center gap-3 shrink-0 text-sm">
+            <span class="text-slate-400" x-text="`${row.correct}/${row.total} corrette`"></span>
+            <span class="font-mono text-emerald-300" x-text="`${row.p.score} pt`"></span>
+            <span class="text-slate-500" x-text="open === row.p.id ? '▲' : '▼'">▼</span>
+          </span>
+        </button>
+
+        <div x-show="open === row.p.id" x-cloak class="border-t border-slate-800 bg-slate-950/40 p-4 space-y-3">
+          <template x-for="(a, i) in row.answers" :key="i">
+            <div class="rounded-lg border p-4"
+                 :class="a.timed_out ? 'border-slate-700 bg-slate-800/20' : a.correct ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-rose-500/40 bg-rose-500/5'">
+              <div class="flex items-center justify-between gap-2 text-xs mb-2">
+                <span class="flex items-center gap-2">
+                  <span class="rounded bg-slate-800 px-2 py-0.5" x-text="qtypeLabel(a.qtype)"></span>
+                  <template x-if="a.topic"><span class="text-slate-500" x-text="a.topic"></span></template>
+                </span>
+                <span class="font-semibold" :class="a.timed_out ? 'text-slate-400' : a.correct ? 'text-emerald-300' : 'text-rose-300'"
+                      x-text="a.timed_out ? '⏱ Tempo scaduto' : a.correct ? `✓ Corretto +${a.points}` : '✗ Errato'"></span>
+              </div>
+              <p class="text-sm font-medium mb-3" x-text="a.prompt"></p>
+              <div class="grid md:grid-cols-2 gap-3 text-sm">
+                <div class="rounded-lg bg-slate-900/60 border border-slate-800 p-3">
+                  <div class="text-xs uppercase tracking-wide text-slate-500 mb-1">La sua risposta</div>
+                  <div :class="a.correct ? 'text-emerald-300' : a.timed_out ? 'text-slate-400' : 'text-rose-300'" x-text="a.your_text"></div>
+                </div>
+                <div class="rounded-lg bg-slate-900/60 border border-slate-800 p-3">
+                  <div class="text-xs uppercase tracking-wide text-slate-500 mb-1">Risposta corretta</div>
+                  <div class="text-emerald-300" x-text="a.correct_text"></div>
+                </div>
+              </div>
+              <template x-if="a.explanation_html">
+                <div class="mt-3 rounded-lg border border-slate-800 bg-slate-950/60 p-3">
+                  <div class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Spiegazione</div>
+                  <div class="prose prose-invert prose-sm max-w-none" x-html="a.explanation_html"></div>
+                </div>
+              </template>
+            </div>
+          </template>
+          <template x-if="!row.answers.length"><p class="text-sm text-slate-500">Nessuna risposta.</p></template>
+        </div>
+      </div>
+    </template>
+  </div>
+</section>
+</div>
+</template>
+</div>
+</template>
+</div>

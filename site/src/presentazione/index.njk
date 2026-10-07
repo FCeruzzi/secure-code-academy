@@ -1,0 +1,25 @@
+---
+layout: layouts/base.njk
+title: Presentazione · Secure Code Academy
+---
+<div x-data="presentationPage" x-init="load()">
+{% include "partials/loading.njk" %}
+<template x-if="state === 'ready'">
+<div>
+<a :href="url('corso/', { c: course.slug })" class="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium hover:bg-slate-800 transition mb-4">← Indietro al corso</a>
+
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-2xl font-bold flex items-center gap-2">📊 <span x-text="presentation.title || 'Presentazione'"></span></h1>
+  <a :href="$safeUrl(presentation.url)" target="_blank" rel="noopener"
+     class="rounded-lg border border-slate-700 px-4 py-2 text-sm hover:bg-slate-800 transition">⬇ Scarica il PDF</a>
+</div>
+
+<div class="rounded-2xl border border-slate-800 overflow-hidden bg-slate-900">
+  <iframe :src="$safeUrl(presentation.url)" class="w-full" style="height: 80vh;" :title="presentation.title"></iframe>
+</div>
+<p class="mt-3 text-xs text-slate-500">
+  Se la presentazione non viene visualizzata, <a :href="$safeUrl(presentation.url)" target="_blank" class="text-emerald-400 hover:underline">aprila in una nuova scheda</a>.
+</p>
+</div>
+</template>
+</div>

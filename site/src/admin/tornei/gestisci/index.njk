@@ -1,0 +1,168 @@
+---
+layout: layouts/admin.njk
+title: Gestione torneo · Pannello
+navActive: tornei
+---
+<div x-data="adminTournamentManage">
+{% include "partials/loading.njk" %}
+<template x-if="state === 'ready'">
+<div>
+<div class="flex items-center justify-between gap-4 mb-6">
+  <h1 class="text-2xl font-bold" x-text="t.title"></h1>
+  <div class="flex items-center gap-2">
+    <a :href="url('admin/tornei/modifica/', { id: t.id })" title="Modifica" aria-label="Modifica" class="inline-flex items-center rounded-lg bg-slate-800 px-3 py-2 hover:bg-slate-700">{% include "partials/icon-pencil.njk" %}</a>
+  </div>
+</div>
+<nav class="text-sm text-slate-400 mb-6"><a href="/admin/tornei/" class="hover:text-slate-200">← Tornei</a></nav>
+
+<section class="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-5 mb-6">
+  <h2 class="font-semibold mb-2">🔗 Link di partecipazione</h2>
+  <p class="text-xs text-slate-400 mb-3">Condividi questo link: chi lo apre sceglie nome e personaggio e attende in sala d'attesa fino all'avvio.</p>
+  <div class="flex gap-2">
+    <input readonly :value="joinUrl" class="flex-1 rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm font-mono">
+    <button type="button" @click="copy()" class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400" x-text="copied ? '✓ Copiato' : 'Copia'">Copia</button>
+  </div>
+</section>
+
+<div class="grid lg:grid-cols-2 gap-6">
+  <section class="rounded-xl border border-slate-800 bg-slate-900/40 p-5">
+    <h2 class="font-semibold mb-3">🏁 Gara — <span class="text-emerald-300" x-text="statusLabel(status)"></span></h2>
+
+    <template x-if="status === 'DRAFT'">
+      <div>
+        <p class="text-xs text-slate-500 mb-3">Apri le iscrizioni per far entrare i partecipanti nella sala d'attesa. Le domande vengono estratte casualmente dalla banca dei corsi selezionati (escluse quelle dei quiz) all'avvio di ogni round.</p>
+        <button type="button" @click="setStatus('OPEN')" class="w-full rounded-xl bg-emerald-500 px-4 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400">📣 Apri le iscrizioni</button>
+      </div>
+    </template>
+
+    <template x-if="status === 'OPEN'">
+      <div>
+        <p class="text-xs text-slate-500 mb-3">Iscrizioni aperte: i partecipanti attendono in sala. Avvia quando sei pronto — a quel punto parte la prima domanda per tutti.</p>
+        <div class="flex flex-col gap-2">
+          <button type="button" @click="run('start')" class="w-full rounded-xl bg-emerald-500 px-4 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400">▶ Avvia la gara</button>
+          <button type="button" @click="setStatus('DRAFT')" class="w-full rounded-lg border border-slate-700 px-4 py-2 text-sm hover:bg-slate-800">↩ Torna in bozza</button>
+        </div>
+      </div>
+    </template>
+
+    <template x-if="status === 'RUNNING'">
+      <div>
+        <template x-if="!monitor"><p class="text-sm text-slate-500">Caricamento monitor…</p></template>
+        <template x-if="monitor">
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="text-sm text-slate-400"><span x-text="`Round ${monitor.current_round}/${monitor.num_rounds} · Domanda `"></span><strong class="text-slate-200" x-text="monitor.q_index"></strong> di <span x-text="monitor.q_total"></span>
+                <span class="ml-1 rounded bg-slate-800 px-2 py-0.5 text-xs" x-text="monitor.run_phase === 'REVEAL' ? 'Risposta' : monitor.run_phase === 'INTERMISSION' ? 'Intervallo' : 'In gioco'"></span></div>
+              <template x-if="monitor.run_phase === 'QUESTION' && monitor.deadline_ms">
+                <div class="font-mono text-sm rounded-lg bg-slate-800 px-3 py-1" :class="remaining < 15000 ? 'text-rose-400' : 'text-slate-200'">⏱ <span x-text="clock()">--:--</span></div>
+              </template>
+              <template x-if="monitor.run_phase === 'REVEAL' && monitor.reveal_ms">
+                <div class="font-mono text-sm rounded-lg bg-amber-500/15 text-amber-300 px-3 py-1">reveal <span x-text="revealSeconds()">5</span>s</div>
+              </template>
+            </div>
+
+            <template x-if="monitor.run_phase === 'INTERMISSION'">
+              <div class="space-y-4">
+                <div class="rounded-xl bg-slate-800/40 px-4 py-3 text-center text-sm text-slate-300" x-text="`Round ${monitor.current_round} concluso. I partecipanti vedono la classifica.`"></div>
+                <button type="button" @click="run('next-round')" class="w-full rounded-xl bg-emerald-500 px-4 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400" x-text="`▶ Avvia round ${monitor.current_round + 1}`"></button>
+              </div>
+            </template>
+
+            <template x-if="monitor.run_phase === 'REVEAL'">
+              <div class="space-y-4">
+                <div class="rounded-xl bg-slate-800/40 px-4 py-3 text-center text-sm text-slate-300">La risposta corretta è mostrata a tutti i partecipanti.</div>
+                <button type="button" @click="run('next')" class="w-full rounded-xl bg-slate-800 px-4 py-2.5 font-semibold text-slate-200 hover:bg-slate-700"
+                        x-text="monitor.is_last ? (monitor.current_round < monitor.num_rounds ? 'Fine round → classifica' : '🏆 Vai alla classifica finale') : 'Salta al prossimo →'"></button>
+              </div>
+            </template>
+
+            <template x-if="monitor.run_phase === 'QUESTION'">
+              <div class="space-y-4">
+                <div>
+                  <div class="flex items-center justify-between text-sm mb-1">
+                    <span class="text-slate-400">Hanno risposto</span>
+                    <span class="font-mono"><strong :class="monitor.all_done ? 'text-emerald-300' : 'text-slate-200'" x-text="monitor.answered"></strong> / <span x-text="monitor.n"></span><template x-if="monitor.expired"><span> · <span class="text-rose-300">tempo scaduto</span></span></template></span>
+                  </div>
+                  <div class="h-2 w-full rounded-full bg-slate-800 overflow-hidden">
+                    <div class="h-full" :class="monitor.all_done ? 'bg-emerald-500' : 'bg-amber-500'" :style="`width: ${widthPct(monitor.answered, monitor.n)}%`"></div>
+                  </div>
+                </div>
+                <button type="button" @click="run('next')" class="w-full rounded-xl px-4 py-2.5 font-semibold transition"
+                        :class="monitor.all_done ? 'bg-emerald-500 text-slate-950 hover:bg-emerald-400' : 'bg-slate-800 text-slate-200 hover:bg-slate-700'">Mostra risposta e prosegui →</button>
+                <template x-if="!monitor.all_done"><p class="text-center text-xs text-slate-500">Attendi che tutti rispondano o che scada il tempo, oppure forza il reveal.</p></template>
+              </div>
+            </template>
+
+            <div class="space-y-1 max-h-56 overflow-y-auto pt-3 border-t border-slate-800">
+              <template x-for="p in monitor.participants" :key="p.id">
+                <div class="flex items-center justify-between text-sm px-1 py-1">
+                  <span class="flex items-center gap-2 min-w-0">
+                    <span x-text="avatar(p.avatar_key)"></span>
+                    <span class="truncate" x-text="p.display_name"></span>
+                    <template x-if="monitor.run_phase === 'QUESTION' && p.answered"><span class="text-emerald-400" title="Ha risposto">✓</span></template>
+                    <template x-if="monitor.run_phase === 'QUESTION' && !p.answered"><span class="text-slate-600" title="Non ancora">…</span></template>
+                  </span>
+                  <span class="font-mono text-emerald-300" x-text="p.score"></span>
+                </div>
+              </template>
+              <template x-if="!monitor.participants.length"><p class="text-sm text-slate-500">Nessun partecipante.</p></template>
+            </div>
+          </div>
+        </template>
+        <div class="mt-4 border-t border-slate-800 pt-4">
+          <button type="button" @click="finishNow()" class="w-full rounded-lg border border-rose-700/50 text-rose-300 px-4 py-2.5 text-sm font-semibold hover:bg-rose-500/10 transition">🏁 Termina subito</button>
+        </div>
+      </div>
+    </template>
+
+    <template x-if="status === 'CLOSED'">
+      <div>
+        <p class="text-sm text-slate-400 mb-3">Il torneo è terminato.</p>
+        <div class="flex flex-wrap gap-2">
+          <a :href="url('t/classifica/', { k: t.join_token })" target="_blank" class="inline-block rounded-xl bg-amber-500 px-4 py-2.5 font-semibold text-slate-950 hover:bg-amber-400">🏅 Classifica finale</a>
+          <a :href="url('admin/tornei/report/', { id: t.id })" class="inline-block rounded-xl bg-violet-500 px-4 py-2.5 font-semibold text-slate-950 hover:bg-violet-400">📊 Report statistiche</a>
+        </div>
+      </div>
+    </template>
+  </section>
+
+  <section class="rounded-xl border border-slate-800 bg-slate-900/40 p-5">
+    <h2 class="font-semibold mb-3" x-text="`👥 Partecipanti (${participants.length})`"></h2>
+    <div class="space-y-1 max-h-56 overflow-y-auto">
+      <template x-for="p in participants" :key="p.id">
+        <div class="flex items-center justify-between text-sm px-2 py-1">
+          <span x-text="`${avatar(p.avatar_key)} ${p.display_name}`"></span>
+          <span class="font-mono text-emerald-300" x-text="p.score + (p.finished ? ' ✓' : '')"></span>
+        </div>
+      </template>
+      <template x-if="!participants.length"><p class="text-sm text-slate-500">Nessun partecipante.</p></template>
+    </div>
+    <dl class="mt-4 pt-3 border-t border-slate-800 text-sm text-slate-400 space-y-1">
+      <div>Corsi: <span class="text-slate-200" x-text="t.courses.map(c => c.title).join(', ') || '—'"></span></div>
+      <div>Pool: <span class="text-slate-200" x-text="`${t.pool_size || 'tutte'} domande × ${t.num_rounds} round`"></span></div>
+      <div>Tempo: <span class="text-slate-200" x-text="`${t.per_question_seconds}s per domanda`"></span> · Punti: <span x-text="t.points_correct + (t.time_bonus ? ' (+bonus)' : '')"></span></div>
+    </dl>
+  </section>
+</div>
+
+<section class="rounded-xl border border-slate-800 bg-slate-900/40 p-5 mt-6">
+  <h2 class="font-semibold mb-3">❓ Domande</h2>
+  <template x-if="status === 'DRAFT'">
+    <p class="text-sm text-slate-400" x-text="`Le domande vengono estratte casualmente dai corsi selezionati all'avvio di ogni round (${t.pool_size || 'tutte'} per round).`"></p>
+  </template>
+  <template x-if="status !== 'DRAFT'">
+    <div class="space-y-2">
+      <template x-for="it in items" :key="`${it.round}-${it.ord}`">
+        <div class="flex items-center gap-2 rounded-lg border border-slate-800 px-3 py-2 min-w-0">
+          <span class="text-xs font-mono text-slate-500" x-text="it.ord"></span>
+          <span class="rounded bg-slate-800 px-2 py-0.5 text-xs" x-text="qtypeLabel(it.qtype)"></span>
+          <span class="truncate text-sm" x-text="it.prompt"></span>
+        </div>
+      </template>
+      <template x-if="!items.length"><p class="text-sm text-slate-500">Nessuna domanda estratta.</p></template>
+    </div>
+  </template>
+</section>
+</div>
+</template>
+</div>

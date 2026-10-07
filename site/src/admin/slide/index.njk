@@ -1,0 +1,77 @@
+---
+layout: layouts/admin.njk
+title: Slide · Pannello
+navActive: corsi
+---
+{% import "forms.njk" as f %}
+<div x-data="adminSlideForm">
+{% include "partials/loading.njk" %}
+<template x-if="state === 'ready'">
+<div>
+<div class="flex items-center justify-between gap-4 mb-6"><h1 class="text-2xl font-bold" x-text="title"></h1></div>
+<nav class="text-sm text-slate-400 mb-6"><a :href="backUrl" class="hover:text-slate-200">← <span x-text="mc.title"></span></a></nav>
+
+<div class="grid lg:grid-cols-3 gap-6">
+  <form @submit.prevent="submit()" class="lg:col-span-2">
+    {{ f.input("title", "Titolo", attrs='maxlength="200"') }}
+    <div class="mb-4">
+      <label for="f-section" class="block text-sm font-medium mb-1 text-slate-300">Sezione <span class="text-rose-400">*</span></label>
+      <select id="f-section" x-model="form.section" required class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-none font-[inherit]">
+        <template x-for="opt in sections" :key="opt[0]"><option :value="opt[0]" x-text="opt[1]" :selected="opt[0] === form.section"></option></template>
+      </select>
+      {{ f.errorsOf("section") }}
+    </div>
+    {{ f.textarea("body_markdown", "Contenuto (Markdown)", rows=16, extra="font-mono text-sm", help="Markdown: testo, **grassetto**, blocchi di codice con ```lang ... ```, immagini con ![alt](img:chiave) usando la chiave di una immagine inserita.") }}
+    {{ f.input("order", "Order", type="number", required=true, attrs='min="0"') }}
+    <div class="flex gap-3 mt-6">
+      <button type="submit" :disabled="busy" class="rounded-lg bg-emerald-500 px-5 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-60">💾 Salva</button>
+      <a :href="backUrl" class="rounded-lg border border-slate-700 px-5 py-2.5 hover:bg-slate-800 transition">Annulla</a>
+    </div>
+  </form>
+
+  <section class="rounded-xl border border-slate-800 bg-slate-900/40 p-5 h-fit">
+    <h2 class="font-semibold mb-1">🖼️ Immagini</h2>
+    <p class="text-xs text-slate-500 mb-3">Incolla qui il link di un'immagine già pubblicata online e inseriscila nel testo con <code class="text-emerald-300">![alt](img:CHIAVE)</code>.</p>
+    <template x-if="slide">
+      <div>
+        <div class="space-y-2 mb-4">
+          <template x-for="im in images" :key="im.id">
+            <div class="flex items-center justify-between gap-2 rounded-lg border border-slate-800 px-3 py-2">
+              <div class="flex items-center gap-2 min-w-0">
+                <img :src="$safeUrl(im.url)" alt="" class="h-8 w-8 rounded object-cover shrink-0">
+                <code class="text-xs text-emerald-300 truncate" x-text="'img:' + im.ref_key"></code>
+              </div>
+              <button type="button" @click="removeImage(im)" title="Elimina" aria-label="Elimina" class="inline-flex items-center rounded border border-rose-700/50 text-rose-300 px-2 py-1.5 hover:bg-rose-500/10 shrink-0">{% include "partials/icon-trash.njk" %}</button>
+            </div>
+          </template>
+          <template x-if="!images.length"><p class="text-sm text-slate-500">Nessuna immagine.</p></template>
+        </div>
+        <form @submit.prevent="addImage()" class="border-t border-slate-800 pt-4 space-y-2">
+          <div class="mb-4">
+            <label class="block text-sm font-medium mb-1 text-slate-300">Chiave di riferimento <span class="text-rose-400">*</span></label>
+            <input type="text" x-model="img.ref_key" required maxlength="80" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-none font-[inherit]">
+            <p class="text-xs text-slate-500 mt-1">Usala nel markdown così: ![descrizione](img:CHIAVE)</p>
+            <template x-for="e in (imgErrors.ref_key || [])"><p class="text-xs text-rose-400 mt-1" x-text="e"></p></template>
+          </div>
+          <div class="mb-4">
+            <label class="block text-sm font-medium mb-1 text-slate-300">Link all'immagine <span class="text-rose-400">*</span></label>
+            <input type="url" x-model="img.url" required maxlength="500" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-none font-[inherit]">
+            <p class="text-xs text-slate-500 mt-1">Link diretto all'immagine già pubblicata online.</p>
+            <template x-for="e in (imgErrors.url || [])"><p class="text-xs text-rose-400 mt-1" x-text="e"></p></template>
+          </div>
+          <div class="mb-4">
+            <label class="block text-sm font-medium mb-1 text-slate-300">Testo alternativo</label>
+            <input type="text" x-model="img.alt_text" maxlength="200" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-none font-[inherit]">
+          </div>
+          <button class="text-xs rounded-md bg-slate-800 px-3 py-1.5 hover:bg-slate-700">+ Aggiungi immagine</button>
+        </form>
+      </div>
+    </template>
+    <template x-if="!slide">
+      <p class="text-sm text-slate-500">Salva prima la slide per aggiungere e gestire le immagini.</p>
+    </template>
+  </section>
+</div>
+</div>
+</template>
+</div>

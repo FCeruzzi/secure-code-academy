@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="it" class="h-full scroll-smooth">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {#- GitHub Pages non permette header HTTP propri: la policy è in un meta.
+      Niente 'unsafe-inline' negli script: il sito non ha script inline, quindi un
+      eventuale `javascript:` o handler iniettato non parte. 'unsafe-eval' serve ad
+      Alpine per le espressioni nei template. connect-src apre solo l'API del Worker,
+      frame-src gli host delle presentazioni (FRAME_SRC). frame-ancestors non è
+      applicabile da meta. #}
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; frame-src {{ site.frameSrc }}; connect-src 'self' {{ site.apiOrigin }}; base-uri 'self'; form-action 'self'; object-src 'none'">
+  <meta name="referrer" content="same-origin">
+  <meta name="sca-base" content="{{ '/' | url }}">
+  <meta name="sca-api" content="{{ site.api }}">
+  <title>{{ title or site.name }}</title>
+  <link rel="stylesheet" href="/assets/app.css?v={{ site.version }}">
+  <script defer src="/assets/app.js?v={{ site.version }}"></script>
+</head>
+<body class="h-full bg-slate-950 text-slate-100 antialiased selection:bg-emerald-500/30">
+<div class="min-h-full flex flex-col">
+  <header class="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur">
+    <div class="mx-auto max-w-6xl px-4 h-16 flex items-center justify-between gap-4">
+      <a href="/" class="flex items-center gap-2 font-semibold tracking-tight">
+        <span class="text-2xl">🛡️</span>
+        <span class="text-lg">Secure Code <span class="text-emerald-400">Academy</span></span>
+      </a>
+      <nav class="flex items-center gap-1 text-sm" x-data="navBar">
+        <template x-if="loggedIn">
+          <div class="flex items-center gap-1">
+            <a href="/admin/" class="px-3 py-2 rounded-lg hover:bg-slate-800/70 transition">Pannello</a>
+            <button type="button" @click="logout()" class="px-3 py-2 rounded-lg hover:bg-slate-800/70 transition text-slate-400">Esci</button>
+          </div>
+        </template>
+        <template x-if="!loggedIn">
+          <a href="/admin/login/" class="ml-1 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition">Area Admin</a>
+        </template>
+      </nav>
+    </div>
+  </header>
+
+  <div x-data="flashMessages" x-cloak x-show="messages.length" class="mx-auto max-w-6xl w-full px-4 mt-4 space-y-2">
+    <template x-for="(m, i) in messages" :key="i">
+      <div class="rounded-lg border px-4 py-3 text-sm" :class="`border-${m.color}-500/40 bg-${m.color}-500/10 text-${m.color}-200`" x-text="m.text"></div>
+    </template>
+  </div>
+
+  <main class="flex-1 mx-auto {{ mainWidth or 'max-w-6xl' }} w-full px-4 py-8">
+    {{ content | safe }}
+  </main>
+
+  <footer class="border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">
+    {{ site.name }}
+  </footer>
+</div>
+</body>
+</html>

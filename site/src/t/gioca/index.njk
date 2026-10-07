@@ -1,0 +1,106 @@
+---
+layout: layouts/base.njk
+title: In gioco · Torneo
+mainWidth: max-w-none
+---
+{% set variant = 'tournament' %}
+<div x-data="tournamentPage('play')" x-init="load()">
+{% include "partials/loading.njk" %}
+<template x-if="state === 'concluded'"><div>{% include "partials/t-concluded.njk" %}</div></template>
+<template x-if="state === 'ready' && card">
+<div class="flex flex-col lg:flex-row gap-6 w-full">
+  <div class="flex-1 min-w-0">
+    <div class="flex items-center gap-2 text-sm mb-4 max-w-2xl mx-auto">
+      <span class="text-2xl" x-text="avatar(me?.avatar_key)"></span>
+      <span class="font-medium" x-text="me?.display_name"></span>
+    </div>
+
+    {# Intervallo fra due round #}
+    <template x-if="card?.run_phase === 'INTERMISSION'">
+      <div id="quiz-card" class="mx-auto max-w-2xl rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
+        <div class="text-center mb-5">
+          <div class="text-4xl mb-1">🏁</div>
+          <h2 class="text-xl font-bold" x-text="`Round ${card?.current_round} di ${card?.num_rounds} concluso`"></h2>
+          <p class="text-sm text-slate-400">Classifica provvisoria — in attesa che l'organizzatore avvii il prossimo round…</p>
+        </div>
+        {% include "partials/leaderboard.njk" %}
+        <div class="mt-4 flex items-center justify-center gap-2 text-sm text-amber-300">
+          <span class="inline-block h-2 w-2 rounded-full bg-amber-400 animate-pulse"></span> In attesa del round successivo
+        </div>
+      </div>
+    </template>
+
+    {# Domanda in corso #}
+    <template x-if="card?.run_phase === 'QUESTION' && q">
+      <div id="quiz-card" class="mx-auto rounded-2xl border border-slate-800 bg-slate-900/50 p-6"
+           :class="wide ? 'w-full max-w-none' : 'max-w-2xl'">
+        <div class="flex items-center justify-between text-xs text-slate-500 mb-3">
+          <span x-text="`Domanda ${card?.index} di ${card?.total}`"></span>
+          <span class="flex items-center gap-2">
+            <span class="rounded-md bg-slate-800 px-2 py-0.5" x-text="q?.qtype_label"></span>
+            <template x-if="card?.deadline_ms"><span class="font-mono rounded-md bg-slate-800 px-2 py-0.5" :class="remaining < 15000 ? 'text-rose-400' : 'text-slate-200'">⏱ <span x-text="clock()">--:--</span></span></template>
+          </span>
+        </div>
+        <div class="h-1.5 w-full rounded-full bg-slate-800 mb-5 overflow-hidden">
+          <div class="h-full bg-amber-500" :style="`width: ${widthPct(card?.index, card?.total)}%`"></div>
+        </div>
+        <div class="prose prose-invert max-w-none mb-5" x-html="q?.prompt_html"></div>
+
+        {# Nessun pulsante di conferma: la risposta parte a ogni selezione e resta
+           modificabile fino al reveal. #}
+        <form x-show="!expired" @submit.prevent>
+          {% include "partials/question-inputs.njk" %}
+        </form>
+
+        <div class="mt-5 border-t border-slate-800 pt-4">
+          <div class="flex items-center justify-between text-sm mb-2">
+            <span class="text-slate-400">Hanno risposto</span>
+            <span class="font-mono"><strong class="text-emerald-300" x-text="card?.answered"></strong> / <span x-text="card?.n"></span></span>
+          </div>
+          <div class="h-2 w-full rounded-full bg-slate-800 overflow-hidden">
+            <div class="h-full bg-emerald-500 transition-all" :style="`width: ${widthPct(card?.answered, card?.n)}%`"></div>
+          </div>
+        </div>
+
+        <div x-show="expired" x-cloak class="mt-4 rounded-xl bg-slate-800/50 px-4 py-6 text-center text-slate-300">
+          ⏱ <strong>Tempo scaduto</strong><br>
+          <span class="text-sm text-slate-400">In attesa della risposta…</span>
+        </div>
+      </div>
+    </template>
+
+    {# Reveal della risposta #}
+    <template x-if="card?.run_phase === 'REVEAL' && q && rv">
+      <div id="quiz-card" class="mx-auto rounded-2xl border bg-slate-900/50 p-6"
+           :class="[wide ? 'w-full max-w-none' : 'max-w-2xl', rv?.correct ? 'border-emerald-500/50' : rv?.timed_out ? 'border-slate-700' : 'border-rose-500/50']">
+        <div class="flex items-center justify-between text-xs text-slate-500 mb-3">
+          <span x-text="`Domanda ${card?.index} di ${card?.total}`"></span>
+          <span>Punteggio: <strong class="text-emerald-300" x-text="me?.score"></strong></span>
+        </div>
+        <template x-if="rv?.correct"><div class="rounded-xl bg-emerald-500/15 text-emerald-300 px-4 py-3 font-semibold mb-4" x-text="`✓ Corretto! +${rv?.points} punti`"></div></template>
+        <template x-if="!rv?.correct && rv?.timed_out"><div class="rounded-xl bg-slate-700/40 text-slate-300 px-4 py-3 font-semibold mb-4">⏱ Tempo scaduto</div></template>
+        <template x-if="!rv?.correct && !rv?.timed_out"><div class="rounded-xl bg-rose-500/15 text-rose-300 px-4 py-3 font-semibold mb-4">✗ Non corretto</div></template>
+        <div class="prose prose-invert max-w-none mb-4" x-html="q?.prompt_html"></div>
+        {% include "partials/answer-reveal.njk" %}
+        <template x-if="rv?.explanation_html">
+          <div class="mt-4 rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+            <div class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Spiegazione</div>
+            <div class="prose prose-invert prose-sm max-w-none" x-html="rv?.explanation_html"></div>
+          </div>
+        </template>
+        <div class="mt-6 flex items-center justify-center gap-2 rounded-xl bg-slate-800/50 px-4 py-3 text-sm text-slate-300">
+          <span x-text="(card?.is_last ? (card?.current_round < card?.num_rounds ? 'Classifica del round' : 'Classifica finale') : 'Prossima domanda') + ' tra'"></span> <span class="font-mono text-amber-300" x-text="revealSeconds()">5</span>s…
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <aside class="lg:w-72 shrink-0">
+    <div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 lg:sticky lg:top-20">
+      <h2 class="text-sm font-semibold text-slate-300 mb-3">🏅 Classifica</h2>
+      {% include "partials/leaderboard.njk" %}
+    </div>
+  </aside>
+</div>
+</template>
+</div>

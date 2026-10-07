@@ -1,0 +1,107 @@
+---
+layout: layouts/admin.njk
+title: Domande · Pannello
+navActive: domande
+---
+{% macro sortTh(key, label, width) %}
+<th class="px-4 py-3 {{ width }}">
+  <button type="button" @click="sortBy('{{ key }}')" title="Ordina per {{ label }}" class="inline-flex items-center gap-1 hover:text-slate-200 transition">
+    <span>{{ label }}</span>
+    <span x-show="sort === '{{ key }}'" class="text-emerald-400" x-text="dir === 'asc' ? '▲' : '▼'"></span>
+    <span x-show="sort !== '{{ key }}'" class="text-slate-600">↕</span>
+  </button>
+</th>
+{% endmacro %}
+<div x-data="adminQuestionList">
+<div class="flex items-center justify-between gap-4 mb-6">
+  <h1 class="text-2xl font-bold">Domande</h1>
+  <div class="flex items-center gap-2">
+    <button type="button" @click="exportQuestions()" class="rounded-lg border border-slate-700 px-4 py-2 text-sm hover:bg-slate-800 transition">⬇ Esporta JSON</button>
+    <a href="/admin/domande/importa/" class="rounded-lg border border-slate-700 px-4 py-2 text-sm hover:bg-slate-800 transition">⬆ Importa JSON</a>
+    <a href="/admin/domande/nuova/" class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400 transition">➕ Nuova domanda</a>
+  </div>
+</div>
+{% include "partials/loading.njk" %}
+<template x-if="state === 'ready'">
+<div>
+<form @submit.prevent class="flex flex-wrap items-end gap-3 mb-3">
+  <div>
+    <label class="block text-xs text-slate-400 mb-1">Tipo</label>
+    <select x-model="filters.qtype" @change="filter()" title="Filtra per tipo di domanda" class="rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-sm">
+      <option value="">Tutti</option>
+      <template x-for="t in QTYPES" :key="t[0]"><option :value="t[0]" x-text="qtypeEmoji(t[0])" :selected="t[0] === filters.qtype"></option></template>
+    </select>
+  </div>
+  <div>
+    <label class="block text-xs text-slate-400 mb-1">Corso</label>
+    <select x-model="filters.course" @change="filter()" class="rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-sm">
+      <option value="">Tutti</option>
+      <template x-for="c in courses" :key="c.slug"><option :value="c.slug" x-text="c.title" :selected="c.slug === filters.course"></option></template>
+    </select>
+  </div>
+  <div>
+    <label class="block text-xs text-slate-400 mb-1">Difficoltà</label>
+    <select x-model="filters.difficulty" @change="filter()" title="Filtra per difficoltà" class="rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-sm">
+      <option value="">Tutte</option>
+      <template x-for="d in DIFFICULTIES" :key="d[0]"><option :value="String(d[0])" x-text="difficultyStars(d[0])" :selected="String(d[0]) === filters.difficulty"></option></template>
+    </select>
+  </div>
+</form>
+
+<div class="mb-4 rounded-lg border border-slate-800 bg-slate-900/40 px-4 py-2.5 text-xs text-slate-400 flex flex-wrap gap-x-6 gap-y-1">
+  <span><span class="text-slate-300 font-medium">Difficoltà:</span> ⭐ Base · ⭐⭐ Intermedio · ⭐⭐⭐ Avanzato</span>
+  <span><span class="text-slate-300 font-medium">Tipo:</span> ⚖️ Vero/Falso · ☑️ Scelta multipla · 🐛 Individua la riga errata · 🆚 Confronto di codice</span>
+</div>
+
+<div class="overflow-x-auto rounded-xl border border-slate-800">
+  <table class="w-full table-fixed text-sm">
+    <thead class="bg-slate-900/70 text-slate-400 text-left">
+      <tr>
+        {{ sortTh("prompt", "Domanda", "w-64") }}
+        {{ sortTh("qtype", "Tipo", "w-20") }}
+        {{ sortTh("course", "Corso", "w-40") }}
+        {{ sortTh("difficulty", "Difficoltà", "w-28") }}
+        {{ sortTh("language", "Linguaggio", "w-28") }}
+        <th></th>
+        <th class="px-4 py-3 w-28"></th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-800">
+      <template x-for="q in questions" :key="q.id">
+        <tr>
+          <td class="px-4 py-3">
+            <div class="truncate" x-text="truncate(q.prompt, 80)"></div>
+            <template x-if="!q.is_active"><span class="text-xs text-slate-500">(disattivata)</span></template>
+          </td>
+          <td class="px-4 py-3"><span :title="q.qtype_label" class="text-base" x-text="qtypeEmoji(q.qtype)"></span></td>
+          <td class="px-4 py-3 text-slate-400 truncate" x-text="q.course_title || '—'"></td>
+          <td class="px-4 py-3"><span class="text-sm" x-text="difficultyStars(q.difficulty)"></span></td>
+          <td class="px-4 py-3 text-slate-400 truncate" x-text="languageLabel(q.language)"></td>
+          <td></td>
+          <td class="px-4 py-3 text-right whitespace-nowrap">
+            <a :href="url('admin/domande/contenuto/', { id: q.id })" title="Modifica" aria-label="Modifica" class="inline-flex items-center rounded-md border border-slate-700 px-2 py-1.5 hover:bg-slate-800">{% include "partials/icon-pencil.njk" %}</a>
+            <button type="button" @click="remove(q)" title="Elimina" aria-label="Elimina" class="inline-flex items-center rounded-md border border-rose-700/50 text-rose-300 px-2 py-1.5 hover:bg-rose-500/10">{% include "partials/icon-trash.njk" %}</button>
+          </td>
+        </tr>
+      </template>
+      <template x-if="!questions.length">
+        <tr><td colspan="7" class="px-4 py-6 text-center text-slate-500">Nessuna domanda.</td></tr>
+      </template>
+    </tbody>
+  </table>
+</div>
+
+<template x-if="numPages > 1">
+<div class="mt-4 flex items-center justify-between text-sm text-slate-400">
+  <span x-text="`${count} domande · pagina ${page} di ${numPages}`"></span>
+  <div class="flex items-center gap-2">
+    <template x-if="page > 1"><button type="button" @click="reload(page - 1)" class="rounded-lg border border-slate-700 px-3 py-1.5 hover:bg-slate-800">‹ Prec</button></template>
+    <template x-if="page <= 1"><span class="rounded-lg border border-slate-800 px-3 py-1.5 text-slate-600">‹ Prec</span></template>
+    <template x-if="page < numPages"><button type="button" @click="reload(page + 1)" class="rounded-lg border border-slate-700 px-3 py-1.5 hover:bg-slate-800">Succ ›</button></template>
+    <template x-if="page >= numPages"><span class="rounded-lg border border-slate-800 px-3 py-1.5 text-slate-600">Succ ›</span></template>
+  </div>
+</div>
+</template>
+</div>
+</template>
+</div>

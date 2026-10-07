@@ -1,0 +1,48 @@
+---
+layout: layouts/base.njk
+title: Torneo · Secure Code Academy
+---
+<div x-data="tournamentPage('landing')" x-init="load()">
+{% include "partials/loading.njk" %}
+<template x-if="state === 'concluded'"><div>{% include "partials/t-concluded.njk" %}</div></template>
+<template x-if="state === 'ready'">
+<div class="max-w-xl mx-auto py-10 text-center">
+  <div class="text-5xl mb-3">🏆</div>
+  <h1 class="text-3xl font-bold" x-text="t.title"></h1>
+  <template x-if="t.description"><p class="mt-3 text-slate-400" x-text="t.description"></p></template>
+
+  <div class="mt-4">
+    <template x-if="t.status === 'OPEN'"><span class="rounded-full bg-emerald-500/15 text-emerald-300 px-3 py-1 text-sm">● Iscrizioni aperte</span></template>
+    <template x-if="t.status === 'RUNNING'"><span class="rounded-full bg-amber-500/15 text-amber-300 px-3 py-1 text-sm">● Gara in corso</span></template>
+    <template x-if="t.status === 'DRAFT'"><span class="rounded-full bg-slate-700 text-slate-300 px-3 py-1 text-sm">Non ancora aperto</span></template>
+  </div>
+
+  <div class="mt-8 flex flex-col items-center gap-3">
+    <template x-if="me">
+      <div class="flex flex-col items-center gap-3">
+        <div class="text-slate-300">Bentornato, <span class="text-2xl align-middle" x-text="avatar(me.avatar_key)"></span> <strong x-text="me.display_name"></strong></div>
+        <template x-if="t.status === 'RUNNING'">
+          <a :href="url('t/gioca/', { k: token })" class="rounded-xl bg-emerald-500 px-6 py-3 font-semibold text-slate-950 hover:bg-emerald-400 transition">▶ Continua</a>
+        </template>
+        <template x-if="t.status === 'OPEN'">
+          <a :href="url('t/sala/', { k: token })" class="rounded-xl bg-emerald-500 px-6 py-3 font-semibold text-slate-950 hover:bg-emerald-400 transition">⏳ Torna in sala d'attesa</a>
+        </template>
+        <template x-if="t.status !== 'RUNNING' && t.status !== 'OPEN'">
+          <a :href="url('t/fine/', { k: token })" class="rounded-xl bg-slate-800 px-6 py-3 font-semibold hover:bg-slate-700 transition">Vedi il tuo risultato</a>
+        </template>
+      </div>
+    </template>
+    <template x-if="!me && t.status === 'OPEN'">
+      <a :href="url('t/iscriviti/', { k: token })" class="rounded-xl bg-emerald-500 px-6 py-3 font-semibold text-slate-950 hover:bg-emerald-400 transition">🚀 Unisciti al torneo</a>
+    </template>
+    <template x-if="!me && t.status === 'RUNNING'">
+      <p class="text-slate-500">La gara è già iniziata: non è più possibile unirsi.</p>
+    </template>
+    <template x-if="!me && t.status === 'DRAFT'">
+      <p class="text-slate-500">Il torneo non è disponibile in questo momento.</p>
+    </template>
+    <a :href="url('t/classifica/', { k: token })" class="text-sm text-amber-300 hover:underline">🏅 Vedi la classifica</a>
+  </div>
+</div>
+</template>
+</div>

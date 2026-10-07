@@ -1,0 +1,65 @@
+{#- Input per tipo di domanda, nello scope Alpine: q (la domanda), sel (la
+    selezione), changed() (chiamata a ogni modifica). `variant` = 'quiz' (colori
+    del quiz dei microcorsi, campi obbligatori) oppure 'tournament' (selezione in
+    blu neutro, che non deve suggerire la correttezza). #}
+<template x-if="q?.qtype === 'TRUE_FALSE'">
+  <div>
+    <div class="prose prose-invert max-w-none mb-4 text-slate-300" x-html="q?.statement_html"></div>
+    <div class="grid grid-cols-2 gap-3">
+      <label class="cursor-pointer">
+        <input type="radio" name="answer" value="true" x-model="sel.answer" @change="changed()" class="peer sr-only" required>
+        <div class="rounded-xl border border-slate-700 p-4 text-center font-semibold {% if variant == 'quiz' %}peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10{% else %}peer-checked:border-sky-500 peer-checked:bg-sky-500/10{% endif %} hover:border-slate-600 transition">✔ Vero</div>
+      </label>
+      <label class="cursor-pointer">
+        <input type="radio" name="answer" value="false" x-model="sel.answer" @change="changed()" class="peer sr-only" required>
+        <div class="rounded-xl border border-slate-700 p-4 text-center font-semibold {% if variant == 'quiz' %}peer-checked:border-rose-500 peer-checked:bg-rose-500/10{% else %}peer-checked:border-sky-500 peer-checked:bg-sky-500/10{% endif %} hover:border-slate-600 transition">✘ Falso</div>
+      </label>
+    </div>
+  </div>
+</template>
+
+<template x-if="q?.qtype === 'MULTIPLE_CHOICE'">
+  <div>
+    <div class="space-y-2">
+      <template x-for="opt in (q?.options || [])" :key="opt.id">
+        <label class="cursor-pointer block">
+          <template x-if="q?.multiple">
+            <input type="checkbox" name="selected" :value="opt.id" x-model="sel.selected" @change="changed()" class="peer sr-only">
+          </template>
+          <template x-if="!q?.multiple">
+            <input type="radio" name="selected" :value="opt.id" :checked="sel.selected[0] === opt.id" @change="sel.selected = [opt.id]; changed()" class="peer sr-only">
+          </template>
+          <div class="rounded-xl border border-slate-700 p-3 flex items-center gap-3 {% if variant == 'quiz' %}peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10{% else %}peer-checked:border-sky-500 peer-checked:bg-sky-500/10{% endif %} hover:border-slate-600 transition">
+            <span class="font-mono text-xs uppercase text-slate-500" x-text="opt.id"></span>
+            <span x-text="opt.text"></span>
+          </div>
+        </label>
+      </template>
+    </div>
+    <p x-show="q?.multiple" class="text-xs text-slate-500 mt-2">Sono possibili più risposte corrette.</p>
+  </div>
+</template>
+
+<template x-if="q?.qtype === 'FIND_WRONG_LINE'">
+  <div>
+    <div class="rounded-xl border border-slate-800 bg-slate-950 h-[calc(100vh-25rem)] min-h-[18rem] overflow-y-auto text-sm leading-6">
+      <template x-for="line in (q?.code_lines || [])" :key="line.number">
+        <button type="button" @click="toggleLine(line.number)"
+          :class="sel.lines.includes(line.number) ? '{% if variant == 'quiz' %}bg-rose-500/25 ring-1 ring-rose-500/40{% else %}bg-sky-500/25 ring-1 ring-sky-500/40{% endif %}' : 'hover:bg-slate-800/60'"
+          class="w-full text-left flex gap-3 px-3 py-0.5 transition">
+          <span class="w-8 shrink-0 text-right text-slate-600 select-none" x-text="line.number"></span>
+          <span class="highlight whitespace-pre overflow-x-auto" x-html="line.html"></span>
+        </button>
+      </template>
+    </div>
+    {% if variant == 'quiz' %}
+    <p class="text-xs text-slate-500 mt-2">👆 Clicca la riga di codice che ritieni vulnerabile/errata.</p>
+    {% else %}
+    <p class="text-xs text-slate-500 mt-2">👆 Clicca la riga vulnerabile/errata — puoi cambiare selezione fino allo scadere del tempo.</p>
+    {% endif %}
+  </div>
+</template>
+
+<template x-if="q?.qtype === 'CODE_COMPARISON'">
+  <div>{% include "partials/code-comparison-input.njk" %}</div>
+</template>

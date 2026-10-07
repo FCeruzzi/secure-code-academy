@@ -1,0 +1,36 @@
+---
+layout: layouts/base.njk
+title: Sala d'attesa · Torneo
+---
+<div x-data="tournamentPage('waiting')" x-init="load()">
+{% include "partials/loading.njk" %}
+<template x-if="state === 'concluded'"><div>{% include "partials/t-concluded.njk" %}</div></template>
+<template x-if="state === 'ready'">
+<div class="max-w-2xl mx-auto py-6 text-center">
+  <div class="text-5xl mb-3">⏳</div>
+  <h1 class="text-2xl font-bold">Sala d'attesa</h1>
+  <p class="mt-2 text-slate-400">Sei dentro,
+    <span class="text-2xl align-middle" x-text="avatar(me.avatar_key)"></span>
+    <strong x-text="me.display_name"></strong>! In attesa che l'organizzatore avvii la gara…</p>
+
+  <div class="mt-5 inline-flex items-center gap-2 rounded-full bg-amber-500/10 px-4 py-1.5 text-sm text-amber-300">
+    <span class="inline-block h-2 w-2 rounded-full bg-amber-400 animate-pulse"></span> In attesa dell'avvio
+  </div>
+
+  <div class="mt-6 rounded-xl border border-slate-800 bg-slate-900/40 p-4 text-left text-sm">
+    <h2 class="mb-2 font-semibold text-slate-200">📋 Regole del punteggio</h2>
+    <ul class="space-y-1.5 text-slate-400">
+      <li>🎯 <strong class="text-slate-200" x-text="`${t.rules.points_correct} punti`"></strong> per ogni risposta corretta<template x-if="t.rules.time_bonus"><span>, con <strong class="text-slate-200">bonus velocità</strong>: più rispondi in fretta, più punti extra</span></template>.</li>
+      <li>⏱ Hai <strong class="text-slate-200" x-text="`${t.rules.per_question_seconds} secondi`"></strong> per rispondere a ogni domanda.</li>
+      <li>👁 Allo scadere del tempo (o quando l'organizzatore avanza) la risposta corretta è mostrata a tutti per <strong class="text-slate-200" x-text="`${t.rules.reveal_seconds} secondi`"></strong>.</li>
+      <li>🔁 <strong class="text-slate-200" x-text="`${t.rules.num_rounds} round`"></strong><template x-if="t.rules.num_rounds > 1"><span>: i punteggi si sommano tra i round</span></template>.</li>
+    </ul>
+  </div>
+
+  <div class="mt-8 text-left">
+    <h2 class="mb-3 text-sm font-semibold text-slate-300">👥 Iscritti</h2>
+    {% include "partials/leaderboard.njk" %}
+  </div>
+</div>
+</template>
+</div>

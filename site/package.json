@@ -1,0 +1,21 @@
+{
+  "name": "sca-site",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Sito statico di Secure Code Academy per GitHub Pages (Eleventy + Tailwind + Alpine).",
+  "type": "module",
+  "scripts": {
+    "build:js": "node build-js.mjs",
+    "build:css": "tailwindcss -i ./src/css/input.css -o ./_site/assets/app.css --minify",
+    "build:html": "eleventy",
+    "build": "npm run build:html && npm run build:js && npm run build:css",
+    "serve": "node serve.mjs"
+  },
+  "devDependencies": {
+    "@11ty/eleventy": "^3.1.6",
+    "@tailwindcss/typography": "^0.5.20",
+    "alpinejs": "^3.15.12",
+    "esbuild": "^0.28.2",
+    "tailwindcss": "^3.4.19"
+  }
+}

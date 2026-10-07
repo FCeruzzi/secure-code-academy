@@ -1,0 +1,41 @@
+---
+layout: layouts/base.njk
+---
+{#- Pannello: menu a sinistra, contenuto a destra (admin_panel/base.html). Le
+    pagine compaiono solo con una sessione valida: senza, portano al login. #}
+<div x-data="adminGuard" x-cloak x-show="ok">
+<div class="flex flex-col md:flex-row gap-6">
+  <aside class="md:w-56 shrink-0">
+    <nav class="space-y-1 text-sm md:sticky md:top-20">
+      {% set active = navActive or '' %}
+      <a href="/admin/" class="block rounded-lg px-3 py-2 hover:bg-slate-800 {% if active == 'dashboard' %}bg-slate-800 text-emerald-400{% endif %}">📊 Dashboard</a>
+      <a href="/admin/corsi/" class="block rounded-lg px-3 py-2 hover:bg-slate-800 {% if active == 'corsi' %}bg-slate-800 text-emerald-400{% endif %}">📚 Corsi</a>
+      <a href="/admin/domande/" class="block rounded-lg px-3 py-2 hover:bg-slate-800 {% if active == 'domande' %}bg-slate-800 text-emerald-400{% endif %}">❓ Banca domande</a>
+      <a href="/admin/tornei/" class="block rounded-lg px-3 py-2 hover:bg-slate-800 {% if active == 'tornei' %}bg-slate-800 text-emerald-400{% endif %}">🏆 Tornei</a>
+      <a href="/admin/amministratori/" class="block rounded-lg px-3 py-2 hover:bg-slate-800 {% if active == 'amministratori' %}bg-slate-800 text-emerald-400{% endif %}">👤 Amministratori</a>
+      <div class="my-2 border-t border-slate-800"></div>
+      <a href="/admin/password/" class="block rounded-lg px-3 py-2 hover:bg-slate-800 text-slate-400">🔑 Cambia password</a>
+      <a href="/" class="block rounded-lg px-3 py-2 hover:bg-slate-800 text-slate-400">↗ Vedi il sito</a>
+    </nav>
+  </aside>
+  <div class="flex-1 min-w-0">
+    {{ content | safe }}
+  </div>
+</div>
+
+{# Conferma eliminazione (admin_panel/confirm_delete.html), in una finestra. #}
+<div x-data="confirmModal" x-show="open" x-cloak @keydown.escape.window="open = false"
+     class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4">
+  <div class="w-full max-w-lg rounded-2xl border border-slate-800 bg-slate-900 p-6" @click.outside="open = false">
+    <h2 class="text-2xl font-bold mb-4">Conferma eliminazione</h2>
+    <div class="rounded-xl border border-rose-500/30 bg-rose-500/5 p-5 mb-5">
+      <p>Vuoi davvero eliminare <strong x-text="label"></strong>?</p>
+      <p class="text-sm text-slate-400 mt-1">L'azione è irreversibile.</p>
+    </div>
+    <div class="flex gap-3">
+      <button type="button" @click="confirm()" :disabled="busy" class="inline-flex items-center gap-2 rounded-lg bg-rose-500 px-5 py-2.5 font-semibold text-slate-950 hover:bg-rose-400 transition disabled:opacity-60">{% include "partials/icon-trash.njk" %} Elimina</button>
+      <button type="button" @click="open = false" class="rounded-lg border border-slate-700 px-5 py-2.5 hover:bg-slate-800 transition">Annulla</button>
+    </div>
+  </div>
+</div>
+</div>

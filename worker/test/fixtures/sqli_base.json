@@ -1,0 +1,38 @@
+{
+  "version": "1.0",
+  "microcourse": {
+    "course_slug": "sql-injection",
+    "course_title": "SQL Injection",
+    "course_icon": "💉",
+    "slug": "base",
+    "title": "SQL Injection · Base",
+    "summary": "Bundle di prova per i test del Worker.",
+    "is_published": true,
+    "order": 1,
+    "difficulty": 1,
+    "estimated_minutes": 5
+  },
+  "images": [],
+  "slides": [
+    { "order": 1, "section": "THEORY", "title": "Il problema", "body_markdown": "Una query costruita **concatenando** l'input dell'utente:\n\n```python\ncur.execute(\"SELECT * FROM users WHERE name = '\" + name + \"'\")\n```" },
+    { "order": 2, "section": "ATTACK", "title": "L'attacco", "body_markdown": "Con `' OR '1'='1` la condizione diventa sempre vera." },
+    { "order": 3, "section": "DEFENSE", "title": "La difesa", "body_markdown": "Usa le **query parametrizzate**:\n\n```python\ncur.execute(\"SELECT * FROM users WHERE name = %s\", (name,))\n```" }
+  ],
+  "quiz": {
+    "title": "Quiz: SQL Injection · Base",
+    "questions": [
+      { "qtype": "TRUE_FALSE", "prompt": "Vero o Falso?", "explanation": "Le query parametrizzate separano codice e dati.", "difficulty": 1,
+        "data": { "statement": "Le query parametrizzate impediscono la SQL Injection classica.", "answer": true } },
+      { "qtype": "TRUE_FALSE", "prompt": "Vero o Falso?", "explanation": "L'escaping manuale è fragile.", "difficulty": 1,
+        "data": { "statement": "Togliere gli apici a mano è una difesa sufficiente.", "answer": false } },
+      { "qtype": "MULTIPLE_CHOICE", "prompt": "Quali sono difese efficaci?", "explanation": "Parametri e privilegi minimi.", "difficulty": 2,
+        "data": { "multiple": true, "options": [ { "id": "a", "text": "Query parametrizzate" }, { "id": "b", "text": "Account del database con privilegi minimi" }, { "id": "c", "text": "Nascondere i messaggi di errore e basta" } ], "correct": ["a", "b"] } },
+      { "qtype": "FIND_WRONG_LINE", "prompt": "Quale riga è vulnerabile?", "explanation": "La riga 2 concatena l'input.", "difficulty": 2,
+        "data": { "language": "python", "code": "name = request.args['name']\nsql = \"SELECT * FROM users WHERE name = '\" + name + \"'\"\ncur.execute(sql)", "correct_lines": [2], "start_line": 1 } },
+      { "qtype": "CODE_COMPARISON", "prompt": "Quale versione è sicura?", "explanation": "La versione A usa un parametro.", "difficulty": 2,
+        "data": { "language": "python", "snippet_a": "cur.execute(\"SELECT * FROM t WHERE id = %s\", (id,))", "snippet_b": "cur.execute(\"SELECT * FROM t WHERE id = \" + id)", "correct": "a" } },
+      { "qtype": "TRUE_FALSE", "prompt": "Vero o Falso?", "explanation": "Anche i numeri vanno parametrizzati.", "difficulty": 1,
+        "data": { "statement": "Un parametro numerico non può causare SQL Injection.", "answer": false } }
+    ]
+  }
+}

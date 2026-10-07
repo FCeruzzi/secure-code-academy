@@ -1,0 +1,185 @@
+---
+layout: layouts/admin.njk
+title: Contenuto della domanda · Pannello
+navActive: domande
+mainWidth: max-w-none
+---
+<div x-data="adminQuestionContent">
+<div class="flex items-center justify-between gap-4 mb-6">
+  <h1 class="text-2xl font-bold">Contenuto della domanda — passo 2 di 2</h1>
+  <div class="flex items-center gap-2">
+    <template x-if="question">
+      <a :href="url('admin/domande/dati/', { id: question.id })" class="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-800">{% include "partials/icon-pencil.njk" %} Modifica dati</a>
+    </template>
+  </div>
+</div>
+{% include "partials/loading.njk" %}
+<template x-if="state === 'ready'">
+<div>
+<nav class="text-sm text-slate-400 mb-4"><a href="/admin/domande/" class="hover:text-slate-200">← Banca domande</a></nav>
+
+<div class="rounded-xl border border-slate-800 bg-slate-900/40 p-4 mb-5 text-sm">
+  <div class="flex flex-wrap items-center gap-3">
+    <span class="rounded bg-slate-800 px-2 py-0.5 text-xs" x-text="question.qtype_label"></span>
+    <span class="text-slate-400">Corso: <span class="text-slate-200" x-text="question.course_title || '—'"></span></span>
+    <span class="text-slate-400">Difficoltà: <span class="text-slate-200" x-text="difficultyLabel"></span></span>
+  </div>
+  <template x-if="question.prompt"><div class="prose prose-invert prose-sm max-w-none mt-2 text-slate-300" x-text="question.prompt"></div></template>
+</div>
+
+<form @submit.prevent="submit()">
+  <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-5 mb-4">
+    <div class="font-semibold mb-1">✏️ Contenuto della domanda</div>
+    <p class="text-xs text-slate-500 mb-4">Compila i campi con l'editor: l'anteprima mostra come apparirà la domanda una volta pubblicata.</p>
+
+    <template x-if="qtype === 'TRUE_FALSE'">
+      <div>
+        <label class="block text-sm font-medium mb-1 text-slate-300">Affermazione</label>
+        <textarea x-model="tf.statement" rows="2" placeholder="Es. Le query parametrizzate prevengono la SQL injection."
+          class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-none"></textarea>
+        <p class="text-xs text-slate-500 mt-3 mb-2">Risposta corretta:</p>
+        <div class="grid grid-cols-2 gap-3">
+          <button type="button" @click="tf.answer = true"
+            :class="tf.answer ? 'border-emerald-500 bg-emerald-500/10 text-emerald-300' : 'border-slate-700 text-slate-300'"
+            class="rounded-xl border p-4 text-center font-semibold transition">✔ Vero</button>
+          <button type="button" @click="tf.answer = false"
+            :class="!tf.answer ? 'border-rose-500 bg-rose-500/10 text-rose-300' : 'border-slate-700 text-slate-300'"
+            class="rounded-xl border p-4 text-center font-semibold transition">✘ Falso</button>
+        </div>
+      </div>
+    </template>
+
+    <template x-if="qtype === 'MULTIPLE_CHOICE'">
+      <div>
+        <label class="flex items-center gap-2 text-sm text-slate-300 mb-4">
+          <input type="checkbox" x-model="mc.multiple" @change="normalizeCorrect()"
+            class="h-4 w-4 rounded border-slate-600 bg-slate-900 accent-emerald-500">
+          <span>Più risposte corrette (checkbox invece di scelta singola)</span>
+        </label>
+        <div class="space-y-2">
+          <template x-for="(opt, i) in mc.options" :key="i">
+            <div class="flex items-center gap-2">
+              <button type="button" @click="mc.multiple ? (opt.ok = !opt.ok) : pickSingle(i)"
+                :class="opt.ok ? 'border-emerald-500 bg-emerald-500/20 text-emerald-300' : 'border-slate-600 text-slate-600'"
+                class="h-9 w-9 shrink-0 rounded-lg border flex items-center justify-center transition">
+                <span x-show="opt.ok">✓</span>
+              </button>
+              <span class="font-mono text-xs uppercase text-slate-500 w-5 text-center" x-text="optLetter(i)"></span>
+              <input type="text" x-model="opt.text" placeholder="Testo dell'opzione"
+                class="flex-1 rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-none">
+              <button type="button" @click="removeOption(i)" x-show="mc.options.length > 2"
+                class="text-slate-500 hover:text-rose-400 px-2" title="Rimuovi">✕</button>
+            </div>
+          </template>
+        </div>
+        <button type="button" @click="addOption()" class="mt-3 text-sm text-emerald-300 hover:underline">+ Aggiungi opzione</button>
+        <p class="text-xs text-slate-500 mt-2">Clicca il quadratino a sinistra per segnare la/e risposta/e corretta/e.</p>
+      </div>
+    </template>
+
+    <template x-if="qtype === 'FIND_WRONG_LINE'">
+      <div>
+        <div class="grid sm:grid-cols-3 gap-3 mb-3">
+          <div class="sm:col-span-2">
+            <label class="block text-sm font-medium mb-1 text-slate-300">Linguaggio</label>
+            <select x-model="fwl.language" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-none">
+              <template x-for="l in languages" :key="l"><option :value="l" x-text="l" :selected="l === fwl.language"></option></template>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1 text-slate-300">Prima riga #</label>
+            <input type="number" min="1" x-model.number="fwl.start_line"
+              class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-none">
+          </div>
+        </div>
+        <label class="block text-sm font-medium mb-1 text-slate-300">Codice</label>
+        <textarea x-model="fwl.code" rows="8" spellcheck="false" placeholder="Incolla qui il codice, una vulnerabilità su una riga…"
+          class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-slate-100 font-mono text-sm focus:border-emerald-500 outline-none"></textarea>
+        <div class="mt-3 rounded-xl border border-slate-800 bg-slate-950 overflow-hidden">
+          <div class="px-3 py-2 text-xs text-slate-500 border-b border-slate-800">Anteprima — clicca le righe vulnerabili/errate</div>
+          <div class="max-h-72 overflow-auto text-sm leading-6">
+            <template x-for="(line, i) in fwlLines" :key="i">
+              <button type="button" @click="toggleLine(i)"
+                :class="isBadLine(i) ? 'bg-rose-500/25 ring-1 ring-rose-500/40' : 'hover:bg-slate-800/60'"
+                class="w-full text-left flex gap-3 px-3 py-0.5 transition">
+                <span class="w-8 shrink-0 text-right text-slate-600 select-none font-mono" x-text="lineNo(i)"></span>
+                <span class="font-mono whitespace-pre" x-text="line || ' '"></span>
+              </button>
+            </template>
+          </div>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">Righe corrette: <span class="text-rose-300 font-mono" x-text="sortedLines() || '—'"></span></p>
+      </div>
+    </template>
+
+    <template x-if="qtype === 'CODE_COMPARISON'">
+      <div>
+        <div class="grid sm:grid-cols-3 gap-3 mb-3">
+          <div>
+            <label class="block text-sm font-medium mb-1 text-slate-300">Linguaggio</label>
+            <select x-model="cc.language" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-none">
+              <template x-for="l in languages" :key="l"><option :value="l" x-text="l" :selected="l === cc.language"></option></template>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1 text-slate-300">Etichetta A</label>
+            <input type="text" x-model="cc.label_a" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1 text-slate-300">Etichetta B</label>
+            <input type="text" x-model="cc.label_b" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-none">
+          </div>
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-1 text-slate-300">Versione corretta (sicura)</label>
+          <div class="inline-flex rounded-lg border border-slate-700 overflow-hidden">
+            <button type="button" @click="cc.correct = 'a'" :class="cc.correct === 'a' ? 'bg-emerald-500 text-slate-950' : 'text-slate-300 hover:bg-slate-800'" class="px-5 py-1.5 text-sm font-semibold transition">A</button>
+            <button type="button" @click="cc.correct = 'b'" :class="cc.correct === 'b' ? 'bg-emerald-500 text-slate-950' : 'text-slate-300 hover:bg-slate-800'" class="px-5 py-1.5 text-sm font-semibold transition">B</button>
+          </div>
+        </div>
+        <div class="grid md:grid-cols-2 gap-4">
+          <template x-for="side in ['a','b']" :key="side">
+            <div class="rounded-xl border p-3" :class="cc.correct === side ? 'border-emerald-500/60 ring-1 ring-emerald-500/30' : 'border-slate-700'">
+              <div class="flex items-center justify-between mb-2">
+                <span class="font-semibold text-sm" x-text="side === 'a' ? cc.label_a : cc.label_b"></span>
+                <span x-show="cc.correct === side" class="text-xs text-emerald-300">✓ corretta</span>
+              </div>
+              <div class="space-y-3">
+                <template x-for="(fl, i) in filesOf(side)" :key="i">
+                  <div class="rounded-lg border border-slate-800 bg-slate-950/60 p-2">
+                    <div class="flex items-center gap-2 mb-1">
+                      <span class="text-slate-600">📄</span>
+                      <input type="text" x-model="fl.name" placeholder="Nome file (es. UserDao.java)"
+                        class="flex-1 rounded bg-slate-900 border border-slate-700 px-2 py-1 text-xs font-mono text-slate-100 focus:border-emerald-500 outline-none">
+                      <button type="button" @click="removeFile(side, i)" x-show="filesOf(side).length > 1" class="text-slate-500 hover:text-rose-400 px-1" title="Rimuovi file">✕</button>
+                    </div>
+                    <textarea x-model="fl.content" rows="6" spellcheck="false" placeholder="Contenuto del file…"
+                      class="w-full rounded bg-slate-950 border border-slate-800 px-2 py-1.5 text-xs font-mono text-slate-100 focus:border-emerald-500 outline-none"></textarea>
+                  </div>
+                </template>
+              </div>
+              <button type="button" @click="addFile(side)" class="mt-2 text-sm text-emerald-300 hover:underline">+ Aggiungi file</button>
+            </div>
+          </template>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">Consigliati 3-5 file per lato per simulare un progetto reale.</p>
+      </div>
+    </template>
+  </div>
+
+  <div class="flex gap-3 mt-4">
+    <button type="submit" :disabled="busy" class="rounded-lg bg-emerald-500 px-5 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-60">💾 Salva contenuto</button>
+    <a href="/admin/domande/" class="rounded-lg border border-slate-700 px-5 py-2.5 hover:bg-slate-800 transition">Annulla</a>
+  </div>
+</form>
+
+<details class="mt-6 rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+  <summary class="cursor-pointer text-sm font-medium">JSON della domanda</summary>
+  <div class="mt-3">
+    <button type="button" @click="download()" class="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold hover:bg-slate-700 transition mb-2">⬇ Scarica JSON</button>
+    <pre class="overflow-x-auto rounded-lg bg-slate-950 border border-slate-800 p-3 text-xs text-slate-300"><code x-text="jsonText"></code></pre>
+  </div>
+</details>
+</div>
+</template>
+</div>

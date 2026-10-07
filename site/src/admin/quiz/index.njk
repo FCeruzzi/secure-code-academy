@@ -1,0 +1,94 @@
+---
+layout: layouts/admin.njk
+title: Quiz · Pannello
+navActive: corsi
+---
+<div x-data="adminQuizManage">
+{% include "partials/loading.njk" %}
+<template x-if="state === 'ready'">
+<div>
+<div class="flex items-center justify-between gap-4 mb-6">
+  <h1 class="text-2xl font-bold" x-text="`Quiz · ${mc.title}`"></h1>
+  <div class="flex items-center gap-2">
+    <a href="/admin/domande/nuova/" class="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-800">➕ Nuova domanda</a>
+  </div>
+</div>
+<nav class="text-sm text-slate-400 mb-6"><a :href="url('admin/microcorsi/modifica/', { id: mc.id })" class="hover:text-slate-200">← <span x-text="mc.title"></span></a></nav>
+
+<h2 class="font-semibold mb-3" x-text="`Domande del quiz (${items.length})`"></h2>
+<div class="space-y-2 mb-8">
+  <template x-for="it in items" :key="it.id">
+    <div class="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/50 px-4 py-3">
+      <div class="flex items-center gap-3 min-w-0">
+        <span class="text-xs font-mono text-slate-500" x-text="it.order"></span>
+        <span class="rounded bg-slate-800 px-2 py-0.5 text-xs" x-text="it.qtype_label"></span>
+        <span class="truncate" x-text="truncate(it.prompt, 70)"></span>
+      </div>
+      <div class="flex items-center gap-1 shrink-0">
+        <button type="button" @click="move(it, 'up')" class="text-xs rounded border border-slate-700 px-2 py-1 hover:bg-slate-800">↑</button>
+        <button type="button" @click="move(it, 'down')" class="text-xs rounded border border-slate-700 px-2 py-1 hover:bg-slate-800">↓</button>
+        <a :href="url('admin/domande/contenuto/', { id: it.question_id })" title="Modifica" aria-label="Modifica" class="inline-flex items-center rounded border border-slate-700 px-2 py-1.5 hover:bg-slate-800">{% include "partials/icon-pencil.njk" %}</a>
+        <button type="button" @click="removeItem(it)" class="text-xs rounded border border-rose-700/50 text-rose-300 px-2 py-1 hover:bg-rose-500/10">Rimuovi</button>
+      </div>
+    </div>
+  </template>
+  <template x-if="!items.length">
+    <div class="rounded-xl border border-dashed border-slate-800 p-6 text-center text-slate-500">Nessuna domanda nel quiz. Aggiungine una dal banco qui sotto.</div>
+  </template>
+</div>
+
+<h2 class="font-semibold mb-1">Aggiungi dal banco domande</h2>
+<p class="text-sm text-slate-500 mb-4">Seleziona una domanda per vederne l'anteprima con la soluzione, poi aggiungila al quiz.</p>
+<template x-if="available.length">
+  <div class="grid lg:grid-cols-2 gap-6">
+    <div>
+      <div class="flex flex-wrap items-center gap-3 mb-3">
+        <input type="search" x-model="search" placeholder="Cerca nel testo della domanda…"
+               class="flex-1 min-w-[12rem] rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-slate-100">
+        <label class="flex items-center gap-2 text-xs text-slate-400 whitespace-nowrap"
+               :title="`Mostra solo le domande del corso «${course.title}», cioè quelle in tema con questo microcorso. Togli la spunta per scegliere da tutta la banca.`">
+          <input type="checkbox" x-model="onlyCourse" class="h-4 w-4 rounded border-slate-600 bg-slate-900 accent-emerald-500">
+          <span x-text="`Solo «${course.title}»`"></span>
+          <span class="text-slate-500" aria-hidden="true">ⓘ</span>
+        </label>
+      </div>
+
+      <form @submit.prevent="add()">
+        <div class="space-y-1.5 max-h-[28rem] overflow-y-auto rounded-xl border border-slate-800 p-2">
+          <template x-for="aq in filtered" :key="aq.id">
+            <label :class="selected === aq.id ? 'border-emerald-500/60 bg-emerald-500/5' : 'border-slate-800'"
+                   class="flex items-start gap-3 rounded-lg border px-3 py-2 text-sm cursor-pointer hover:bg-slate-800/60">
+              <input type="radio" name="question" :value="aq.id" required @change="select(aq)" :checked="selected === aq.id"
+                     class="mt-1 h-4 w-4 border-slate-600 bg-slate-900 accent-emerald-500 shrink-0">
+              <span class="min-w-0">
+                <span class="flex items-center gap-2 text-xs text-slate-400">
+                  <span :title="aq.qtype_label" x-text="qtypeEmoji(aq.qtype)"></span>
+                  <span x-text="difficultyStars(aq.difficulty)"></span>
+                  <span class="truncate" x-text="aq.course_title || '—'"></span>
+                </span>
+                <span class="block truncate" x-text="truncate(aq.prompt, 90)"></span>
+              </span>
+            </label>
+          </template>
+        </div>
+        <button class="mt-3 rounded-lg bg-violet-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-violet-400">Aggiungi al quiz</button>
+      </form>
+    </div>
+
+    <div>
+      <h3 class="text-sm font-semibold text-slate-300 mb-2">Anteprima</h3>
+      <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-4 min-h-[10rem] text-sm">
+        <template x-if="!preview"><p class="text-slate-500">Seleziona una domanda dall'elenco per vederne l'anteprima.</p></template>
+        <template x-if="preview">
+          {% include "admin/question-preview.njk" %}
+        </template>
+      </div>
+    </div>
+  </div>
+</template>
+<template x-if="!available.length">
+  <p class="text-sm text-slate-500">Nessuna altra domanda disponibile nel banco. <a href="/admin/domande/nuova/" class="text-emerald-400 hover:underline">Creane una nuova</a>.</p>
+</template>
+</div>
+</template>
+</div>

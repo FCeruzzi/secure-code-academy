@@ -1,0 +1,34 @@
+---
+layout: layouts/admin.njk
+title: Dashboard · Pannello
+navActive: dashboard
+---
+<div x-data="adminDashboard">
+<div class="flex items-center justify-between gap-4 mb-6"><h1 class="text-2xl font-bold">Dashboard</h1></div>
+{% include "partials/loading.njk" %}
+<template x-if="state === 'ready'">
+<div>
+<section class="mb-8">
+  <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-400 mb-3">📚 Catalogo</h2>
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <a href="/admin/corsi/" class="rounded-xl border border-slate-800 bg-slate-900/50 p-4 hover:border-emerald-500/50 transition"><div class="text-3xl font-bold text-emerald-400" x-text="counts.courses"></div><div class="text-sm text-slate-400 mt-1">Corsi</div></a>
+    <div class="rounded-xl border border-slate-800 bg-slate-900/50 p-4"><div class="text-3xl font-bold text-emerald-400" x-text="counts.microcourses"></div><div class="text-sm text-slate-400 mt-1">Microcorsi</div></div>
+    <a href="/admin/domande/" class="rounded-xl border border-slate-800 bg-slate-900/50 p-4 hover:border-emerald-500/50 transition"><div class="text-3xl font-bold text-emerald-400" x-text="counts.questions"></div><div class="text-sm text-slate-400 mt-1">Domande</div></a>
+    <div class="rounded-xl border border-slate-800 bg-slate-900/50 p-4"><div class="text-3xl font-bold text-emerald-400" x-text="counts.presentations"></div><div class="text-sm text-slate-400 mt-1">Presentazioni</div></div>
+  </div>
+  <div class="mt-4 grid sm:grid-cols-2 gap-3">
+    <a href="/admin/corsi/nuovo/" class="rounded-xl border border-slate-800 bg-slate-900/50 px-5 py-3 text-sm hover:border-emerald-500/50 transition">➕ <span class="font-medium">Nuovo corso</span></a>
+    <a href="/admin/domande/nuova/" class="rounded-xl border border-slate-800 bg-slate-900/50 px-5 py-3 text-sm hover:border-emerald-500/50 transition">➕ <span class="font-medium">Nuova domanda</span></a>
+  </div>
+</section>
+
+<section>
+  <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-400 mb-3">🏆 Tornei</h2>
+  <div class="grid grid-cols-2 gap-4">
+    <a href="/admin/tornei/" class="rounded-xl border border-slate-800 bg-slate-900/50 p-4 hover:border-emerald-500/50 transition"><div class="text-3xl font-bold text-amber-400" x-text="counts.tournaments"></div><div class="text-sm text-slate-400 mt-1">Tornei</div></a>
+    <a href="/admin/tornei/nuovo/" class="rounded-xl border border-slate-800 bg-slate-900/50 p-4 hover:border-emerald-500/50 transition flex items-center"><span>➕ <span class="font-medium">Nuovo torneo</span></span></a>
+  </div>
+</section>
+</div>
+</template>
+</div>

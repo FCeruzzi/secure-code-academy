@@ -1,0 +1,28 @@
+---
+layout: layouts/base.njk
+title: Accesso amministratore · Secure Code Academy
+---
+<div x-data="adminLogin" class="max-w-md mx-auto py-10">
+  <div class="rounded-2xl border border-slate-800 bg-slate-900/50 p-8">
+    <div class="text-3xl mb-2">🔐</div>
+    <h1 class="text-2xl font-bold mb-1">Area Amministratore</h1>
+    <p class="text-sm text-slate-400 mb-6">Accedi con il tuo username e la password.</p>
+    <form @submit.prevent="submit()">
+      <template x-if="loginError">
+        <div class="rounded-lg bg-rose-500/10 text-rose-300 px-4 py-3 text-sm mb-4" x-text="loginError"></div>
+      </template>
+      <div class="mb-4">
+        <label for="f-username" class="block text-sm font-medium mb-1 text-slate-300">Username <span class="text-rose-400">*</span></label>
+        <input id="f-username" type="text" x-model="form.username" required autofocus autocomplete="username" maxlength="150"
+               class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-none font-[inherit]">
+      </div>
+      <div class="mb-4">
+        <label for="f-password" class="block text-sm font-medium mb-1 text-slate-300">Password <span class="text-rose-400">*</span></label>
+        <input id="f-password" type="password" x-model="form.password" required autocomplete="off"
+               class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-none font-[inherit]">
+      </div>
+      <button type="submit" :disabled="busy" class="mt-2 w-full rounded-lg bg-emerald-500 px-5 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-60">Accedi</button>
+    </form>
+  </div>
+  <p class="text-center text-xs text-slate-600 mt-4">Solo per amministratori autorizzati.</p>
+</div>

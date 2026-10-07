@@ -1,0 +1,41 @@
+---
+layout: layouts/admin.njk
+title: Microcorsi · Pannello
+navActive: corsi
+---
+<div x-data="adminMicrocourseList">
+{% include "partials/loading.njk" %}
+<template x-if="state === 'ready'">
+<div>
+<div class="flex items-center justify-between gap-4 mb-6">
+  <h1 class="text-2xl font-bold" x-text="`${course.title} · Microcorsi`"></h1>
+  <div class="flex items-center gap-2">
+    <a href="/admin/microcorsi/importa/" class="rounded-lg border border-slate-700 px-4 py-2 text-sm hover:bg-slate-800 transition">⬆ Importa microcorso</a>
+    <a :href="url('admin/microcorsi/nuovo/', { corso: course.id })" class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400 transition">➕ Nuovo microcorso</a>
+  </div>
+</div>
+<nav class="text-sm text-slate-400 mb-4"><a href="/admin/corsi/" class="hover:text-slate-200">← Corsi</a></nav>
+<div class="space-y-3">
+  <template x-for="mc in microcourses" :key="mc.id">
+    <div class="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/50 p-4">
+      <div>
+        <div class="font-medium"><span x-text="mc.title"></span>
+          <template x-if="mc.is_published"><span class="ml-2 rounded bg-emerald-500/15 text-emerald-300 px-2 py-0.5 text-xs">Pubblicato</span></template>
+          <template x-if="!mc.is_published"><span class="ml-2 rounded bg-slate-700 text-slate-300 px-2 py-0.5 text-xs">Bozza</span></template>
+        </div>
+        <div class="text-xs text-slate-500" x-text="truncate(mc.summary, 80)"></div>
+      </div>
+      <div class="flex gap-2 whitespace-nowrap">
+        <button type="button" @click="exportMc(mc)" class="text-xs rounded-md border border-slate-700 px-3 py-1.5 hover:bg-slate-800">⬇ Esporta</button>
+        <a :href="url('admin/microcorsi/modifica/', { id: mc.id })" title="Modifica" aria-label="Modifica" class="inline-flex items-center rounded-md border border-slate-700 px-2 py-1.5 hover:bg-slate-800">{% include "partials/icon-pencil.njk" %}</a>
+        <button type="button" @click="remove(mc)" title="Elimina" aria-label="Elimina" class="inline-flex items-center rounded-md border border-rose-700/50 text-rose-300 px-2 py-1.5 hover:bg-rose-500/10">{% include "partials/icon-trash.njk" %}</button>
+      </div>
+    </div>
+  </template>
+  <template x-if="!microcourses.length">
+    <div class="rounded-xl border border-dashed border-slate-800 p-8 text-center text-slate-500">Nessun microcorso in questo corso.</div>
+  </template>
+</div>
+</div>
+</template>
+</div>

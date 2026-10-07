@@ -1,0 +1,21 @@
+---
+layout: layouts/admin.njk
+title: La tua email · Pannello
+navActive: amministratori
+---
+{% import "forms.njk" as f %}
+<div x-data="adminAdminEdit">
+{% include "partials/loading.njk" %}
+<template x-if="state === 'ready'">
+<div>
+<div class="flex items-center justify-between gap-4 mb-6"><h1 class="text-2xl font-bold" x-text="`La tua email (${target.username})`"></h1></div>
+<form @submit.prevent="submit()" class="max-w-2xl">
+  {{ f.input("email", "Email", type="email", required=true, help="Il tuo recapito, visibile agli altri amministratori.") }}
+  <div class="flex gap-3 mt-6">
+    <button type="submit" :disabled="busy" class="rounded-lg bg-emerald-500 px-5 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-60">💾 Salva</button>
+    <a href="/admin/amministratori/" class="rounded-lg border border-slate-700 px-5 py-2.5 hover:bg-slate-800 transition">Annulla</a>
+  </div>
+</form>
+</div>
+</template>
+</div>

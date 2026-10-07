@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+[x-cloak] { display: none !important; }
+
+/* Evidenziazione del codice: riporta sulle classi di highlight.js l'effetto del
+   pygments.css della versione Django. Quel file colorava solo alcuni token (stringhe, numeri,
+   parole chiave di dichiarazione, nomi di classi e funzioni, annotazioni, tag):
+   commenti, operatori, nomi e tipi restavano nel colore del testo intorno. */
+pre { line-height: 125%; }
+.hljs-keyword, .hljs-literal, .hljs-doctag { color: #66D9EF; }
+.hljs-name, .hljs-selector-tag, .hljs-deletion { color: #FF4689; }
+.hljs-string, .hljs-regexp, .hljs-symbol, .hljs-char.escape_, .hljs-template-tag { color: #E6DB74; }
+.hljs-number { color: #AE81FF; }
+.hljs-title.class_, .hljs-title.function_, .hljs-attr, .hljs-attribute, .hljs-meta,
+.hljs-selector-class, .hljs-selector-id, .hljs-addition { color: #A6E22E; }
+/* In SQL e HTTP Pygments non distingueva le parole chiave: testo semplice. */
+.language-sql .hljs-keyword, .language-http .hljs-keyword { color: inherit; }
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: bold; }

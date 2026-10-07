@@ -1,0 +1,43 @@
+# Cloudflare Worker che fa da backend a Secure Code Academy.
+# Le pagine stanno su GitHub Pages; qui ci sono l'API dei contenuti, il pannello
+# admin (D1) e i tornei live (un Durable Object per torneo).
+name = "sca-api"
+main = "src/index.ts"
+compatibility_date = "2026-08-01"
+
+[vars]
+# Origine del sito su GitHub Pages: l'unica a cui il CORS risponde. Più origini
+# si separano con una virgola (per esempio un dominio tuo più github.io).
+SITE_ORIGIN = "https://fceruzzi.github.io"
+# L'elenco chiuso di chi può amministrare il sito (username separati da virgola).
+# Vuoto nel repository: in deploy lo scrive scripts/ci-configure.mjs dalla
+# variabile ADMIN_USERNAMES del repository, in locale lo dà .dev.vars.
+ADMIN_USERNAMES = ""
+# Iterazioni PBKDF2 per le password admin. 100000 è il massimo che il runtime
+# dei Workers accetta; vedi il README per il limite di CPU del piano Free.
+PBKDF2_ITERATIONS = "100000"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "sca"
+# Sostituito dal workflow con la variabile D1_DATABASE_ID del repository. In
+# locale (`wrangler dev`) va bene così: il database locale è un file SQLite.
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[[durable_objects.bindings]]
+name = "TOURNAMENT"
+class_name = "TournamentRoom"
+
+# Calcola gli hash delle password fuori dal limite di CPU del Worker
+# (src/lib/hasher.ts). Non salva nulla.
+[[durable_objects.bindings]]
+name = "HASHER"
+class_name = "PasswordHasher"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["TournamentRoom", "PasswordHasher"]
+
+[observability]
+enabled = true

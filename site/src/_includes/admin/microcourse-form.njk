@@ -1,0 +1,80 @@
+{% import "forms.njk" as f %}
+<div x-data="adminMicrocourseForm">
+{% include "partials/loading.njk" %}
+<template x-if="state === 'ready'">
+<div>
+<div class="flex items-center justify-between gap-4 mb-6">
+  <h1 class="text-2xl font-bold" x-text="title"></h1>
+  <div class="flex items-center gap-2">
+    <template x-if="mc">
+      <span class="flex items-center gap-2">
+        <a :href="publicUrl" target="_blank" class="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-800">↗ Vedi</a>
+        <button type="button" @click="exportMc()" class="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-800">⬇ Esporta JSON</button>
+      </span>
+    </template>
+  </div>
+</div>
+<nav class="text-sm text-slate-400 mb-6"><a :href="url('admin/microcorsi/', { corso: course.id })" class="hover:text-slate-200">← <span x-text="course.title"></span></a></nav>
+
+<template x-if="!mc">
+<p class="max-w-2xl mb-5 rounded-lg border border-sky-500/30 bg-sky-500/5 px-4 py-3 text-sm text-sky-200">
+  Salva il microcorso per passare al <strong>passo 2</strong>: potrai aggiungere le slide di teoria e le domande del quiz.
+</p>
+</template>
+
+<form @submit.prevent="submit()" class="max-w-2xl">
+  {{ f.input("title", "Titolo", required=true, attrs='maxlength="200"') }}
+  {{ f.input("slug", "Slug", help="Lascia vuoto per generarlo automaticamente dal titolo.", attrs='maxlength="210"') }}
+  {{ f.textarea("summary", "Sommario", rows=3) }}
+  {{ f.input("difficulty", "Difficoltà", type="number", required=true, attrs='min="0"') }}
+  {{ f.input("estimated_minutes", "Minuti stimati", type="number", required=true, attrs='min="0"') }}
+  {{ f.input("order", "Order", type="number", required=true, attrs='min="0"') }}
+  {{ f.checkbox("is_published", "Pubblicato", help="Se attivo il microcorso compare agli utenti nella pagina del corso; altrimenti resta una bozza.") }}
+  <div class="flex gap-3 mt-6">
+    <button type="submit" :disabled="busy" class="rounded-lg bg-emerald-500 px-5 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-60">💾 Salva</button>
+    <a :href="url('admin/microcorsi/', { corso: course.id })" class="rounded-lg border border-slate-700 px-5 py-2.5 hover:bg-slate-800 transition">Annulla</a>
+  </div>
+</form>
+
+<template x-if="mc">
+<div class="mt-10 border-t border-slate-800 pt-8">
+  <h2 class="text-lg font-semibold mb-1">Contenuti del microcorso</h2>
+  <p class="text-sm text-slate-500 mb-5">Le slide di teoria e il quiz finale mostrati agli utenti.</p>
+
+  <div class="grid lg:grid-cols-2 gap-6">
+    <section class="rounded-xl border border-slate-800 bg-slate-900/40 p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-semibold">📝 Teoria (slide)</h3>
+        <a :href="url('admin/slide/', { mc: mc.id })" class="text-xs rounded-md bg-emerald-500 text-slate-950 font-semibold px-3 py-1.5 hover:bg-emerald-400">➕ Aggiungi</a>
+      </div>
+      <div class="space-y-2">
+        <template x-for="s in slides" :key="s.id">
+          <div class="flex items-center justify-between rounded-lg border border-slate-800 px-3 py-2">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="text-xs font-mono text-slate-500" x-text="s.order"></span>
+              <span class="rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase" :class="`bg-${sectionColor(s.section)}-500/15 text-${sectionColor(s.section)}-300`" x-text="sectionLabel(s.section)"></span>
+              <span class="truncate" x-text="s.title || '(senza titolo)'"></span>
+            </div>
+            <div class="flex gap-1 shrink-0">
+              <a :href="url('admin/slide/', { id: s.id })" title="Modifica" aria-label="Modifica" class="inline-flex items-center rounded border border-slate-700 px-2 py-1.5 hover:bg-slate-800">{% include "partials/icon-pencil.njk" %}</a>
+              <button type="button" @click="removeSlide(s)" title="Elimina" aria-label="Elimina" class="inline-flex items-center rounded border border-rose-700/50 text-rose-300 px-2 py-1.5 hover:bg-rose-500/10">{% include "partials/icon-trash.njk" %}</button>
+            </div>
+          </div>
+        </template>
+        <template x-if="!slides.length"><p class="text-sm text-slate-500">Nessuna slide.</p></template>
+      </div>
+    </section>
+
+    <section class="rounded-xl border border-slate-800 bg-slate-900/40 p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-semibold">🧠 Quiz</h3>
+        <a :href="url('admin/quiz/', { mc: mc.id })" class="text-xs rounded-md bg-violet-500 text-slate-950 font-semibold px-3 py-1.5 hover:bg-violet-400">Gestisci quiz</a>
+      </div>
+      <p class="text-sm text-slate-400" x-text="`${questionCount} domand${questionCount === 1 ? 'a' : 'e'} associat${questionCount === 1 ? 'a' : 'e'} a questo microcorso.`"></p>
+    </section>
+  </div>
+</div>
+</template>
+</div>
+</template>
+</div>

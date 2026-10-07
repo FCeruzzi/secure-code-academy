@@ -1,0 +1,30 @@
+---
+layout: layouts/base.njk
+title: Primo accesso · Secure Code Academy
+---
+{% import "forms.njk" as f %}
+<div x-data="adminSetup" class="max-w-md mx-auto py-10">
+  {% include "partials/loading.njk" %}
+  <template x-if="state === 'ready'">
+  <div>
+  <div class="rounded-2xl border border-slate-800 bg-slate-900/50 p-8">
+    <div class="text-3xl mb-2">🔑</div>
+    <h1 class="text-2xl font-bold mb-1">Primo accesso</h1>
+    <p class="text-sm text-slate-400 mb-6">
+      Stai usando una password temporanea, che conosce anche chi l'ha generata.
+      Scegline una tua e indica la tua email, il tuo recapito per gli altri amministratori.
+      Fino ad allora il pannello resta chiuso.
+    </p>
+    <form @submit.prevent="submit()">
+      {{ f.input("email", "La tua email", type="email", required=true, help="Visibile agli altri amministratori.") }}
+      {{ f.input("new_password1", "Nuova password", type="password", required=true, attrs='autocomplete="new-password"') }}
+      {{ f.input("new_password2", "Conferma la nuova password", type="password", required=true, attrs='autocomplete="new-password"') }}
+      <button type="submit" :disabled="busy" class="mt-2 w-full rounded-lg bg-emerald-500 px-5 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-60">Salva e continua</button>
+    </form>
+  </div>
+  <p class="text-center text-xs text-slate-600 mt-4">
+    <button type="button" @click="logout()" class="hover:text-slate-400">Esci</button>
+  </p>
+  </div>
+  </template>
+</div>

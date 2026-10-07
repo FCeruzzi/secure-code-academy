@@ -1,0 +1,41 @@
+# Crea gli account amministratore di ADMIN_USERNAMES con la password temporanea
+# del secret ADMIN_PASSWORD, valida 24 ore per il primo accesso. Non tocca chi
+# ha già completato il primo accesso. Dopo, gli account si gestiscono dal pannello.
+name: Amministratori
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  admins:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: worker
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+      ADMIN_USERNAMES: ${{ vars.ADMIN_USERNAMES }}
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: worker/package-lock.json
+      - run: npm ci
+      - name: Controlla il secret
+        run: |
+          if [ -z "$ADMIN_PASSWORD" ]; then
+            echo "::error::Imposta il secret ADMIN_PASSWORD con la password temporanea."
+            exit 1
+          fi
+      - run: node scripts/ci-configure.mjs
+      - run: npx wrangler d1 migrations apply sca --remote
+      - run: npm run admin:sql
+      - run: npx wrangler d1 execute sca --remote --file admin.sql --yes
