@@ -1,0 +1,167 @@
+{
+  "format": "secure-code-academy/tournament",
+  "version": 1,
+  "exported_at": "2026-11-05T15:24:56.796804+00:00",
+  "source": "altra-installazione",
+  "tournament": {
+    "title": "Gara altrove",
+    "description": "",
+    "status": "CLOSED",
+    "num_rounds": 1,
+    "per_question_seconds": 60,
+    "reveal_seconds": 10,
+    "start_delay_seconds": 5,
+    "points_correct": 100,
+    "time_bonus": false,
+    "pool_size": 4,
+    "round_mix": {
+      "TRUE_FALSE": 1,
+      "MULTIPLE_CHOICE": 0,
+      "FIND_WRONG_LINE": 1,
+      "CODE_COMPARISON": 2
+    },
+    "started_at": "2026-11-05T15:24:22.783882+00:00",
+    "finished_at": "2026-11-05T15:24:22.846894+00:00",
+    "courses": [
+      "SQLi"
+    ]
+  },
+  "questions": [
+    {
+      "key": 17,
+      "round": 1,
+      "order": 1,
+      "qtype": "TRUE_FALSE",
+      "prompt": "VF 4",
+      "explanation": "",
+      "course": "SQLi",
+      "difficulty": 1,
+      "data": {
+        "statement": "S4",
+        "answer": true
+      }
+    },
+    {
+      "key": 15,
+      "round": 1,
+      "order": 2,
+      "qtype": "FIND_WRONG_LINE",
+      "prompt": "RE 3",
+      "explanation": "",
+      "course": "SQLi",
+      "difficulty": 1,
+      "data": {
+        "language": "python",
+        "code": "ok = 3\nbad()",
+        "correct_lines": [
+          2
+        ],
+        "start_line": 1
+      }
+    },
+    {
+      "key": 8,
+      "round": 1,
+      "order": 3,
+      "qtype": "CODE_COMPARISON",
+      "prompt": "CC 1",
+      "explanation": "",
+      "course": "SQLi",
+      "difficulty": 1,
+      "data": {
+        "language": "python",
+        "snippet_a": "safe(1)",
+        "snippet_b": "unsafe(1)",
+        "correct": "a",
+        "label_a": "Versione A",
+        "label_b": "Versione B"
+      }
+    },
+    {
+      "key": 4,
+      "round": 1,
+      "order": 4,
+      "qtype": "CODE_COMPARISON",
+      "prompt": "CC 0",
+      "explanation": "",
+      "course": "SQLi",
+      "difficulty": 1,
+      "data": {
+        "language": "python",
+        "snippet_a": "safe(0)",
+        "snippet_b": "unsafe(0)",
+        "correct": "a",
+        "label_a": "Versione A",
+        "label_b": "Versione B"
+      }
+    }
+  ],
+  "participants": [
+    {
+      "key": 1,
+      "rank": 1,
+      "display_name": "Ada",
+      "avatar_key": "owl",
+      "score": 100,
+      "finished": true,
+      "joined_at": "2026-11-05T15:24:22.764897+00:00",
+      "finished_at": "2026-11-05T15:24:22.846894+00:00"
+    },
+    {
+      "key": 2,
+      "rank": 2,
+      "display_name": "Bob",
+      "avatar_key": "cat",
+      "score": 100,
+      "finished": true,
+      "joined_at": "2026-11-05T15:24:22.775750+00:00",
+      "finished_at": "2026-11-05T15:24:22.846894+00:00"
+    }
+  ],
+  "answers": [
+    {
+      "participant": 1,
+      "question": 17,
+      "submitted": {
+        "answer": true
+      },
+      "is_correct": true,
+      "timed_out": false,
+      "points": 100,
+      "answered_at": "2026-11-05T15:24:22.811174+00:00"
+    },
+    {
+      "participant": 2,
+      "question": 17,
+      "submitted": {
+        "answer": false
+      },
+      "is_correct": false,
+      "timed_out": false,
+      "points": 0,
+      "answered_at": "2026-11-05T15:24:22.820351+00:00"
+    },
+    {
+      "participant": 2,
+      "question": 15,
+      "submitted": {
+        "lines": [
+          "0:2"
+        ]
+      },
+      "is_correct": true,
+      "timed_out": false,
+      "points": 100,
+      "answered_at": "2026-11-05T15:24:22.839497+00:00"
+    },
+    {
+      "participant": 1,
+      "question": 15,
+      "submitted": {},
+      "is_correct": false,
+      "timed_out": true,
+      "points": 0,
+      "answered_at": "2026-11-05T15:24:22.848522+00:00"
+    }
+  ]
+}

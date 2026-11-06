@@ -1,0 +1,71 @@
+---
+layout: layouts/admin.njk
+title: Importa corsi · Pannello
+navActive: corsi
+---
+<div x-data="adminCourseImport">
+<div class="flex items-center justify-between gap-4 mb-6"><h1 class="text-2xl font-bold">Importa corsi (JSON)</h1></div>
+<div class="max-w-2xl">
+  <nav class="text-sm text-slate-400 mb-4"><a href="/admin/corsi/" class="hover:text-slate-200">← Corsi</a></nav>
+  <p class="text-sm text-slate-400 mb-4">Scegli un file JSON esportato con <strong>⬇ Esporta</strong>: compare l'elenco dei corsi e dei microcorsi che contiene, e scegli con le caselle cosa importare. <strong>Un corso già presente (stesso slug) viene sostituito</strong>: i suoi microcorsi, slide, quiz e materiale lasciano il posto a quelli del file; le domande della banca restano collegate al corso. Per un singolo microcorso usa <a href="/admin/microcorsi/importa/" class="text-emerald-300 hover:underline">Importa microcorso</a>.</p>
+  <p x-show="consultant" class="text-sm text-amber-300 mb-4">Come consulente puoi importare solo corsi nuovi: sostituire un corso già presente è riservato agli amministratori.</p>
+
+  <div class="mb-4">
+    <label class="block text-sm font-medium mb-1 text-slate-300">File JSON dei corsi <span class="text-rose-400">*</span></label>
+    <input type="file" accept="application/json,.json" x-ref="file" @change="loadFile()"
+           class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden font-[inherit]">
+    <template x-if="fileError"><p class="text-xs text-rose-400 mt-1" x-text="fileError"></p></template>
+  </div>
+
+  <template x-if="tree.length">
+  <form @submit.prevent="submit()" class="mb-8">
+    <div class="rounded-xl border border-slate-800 divide-y divide-slate-800 mb-4">
+      <template x-for="node in tree" :key="node.course.slug">
+        <div class="p-3">
+          <label class="flex flex-wrap items-center gap-3 font-medium">
+            <input type="checkbox" :checked="node.checked" :disabled="node.locked" @change="toggleCourse(node, $event.target.checked)" class="h-4 w-4 accent-emerald-500">
+            <span x-text="`${node.course.icon || '📘'} ${node.course.title || node.course.slug}`"></span>
+            <span class="text-xs text-slate-500" x-text="node.course.slug"></span>
+            <template x-if="node.locked"><span class="rounded-md bg-amber-500/15 text-amber-300 px-2 py-0.5 text-xs">già presente: solo un amministratore può sostituirlo</span></template>
+            <template x-if="node.exists && !node.locked"><span class="rounded-md bg-amber-500/15 text-amber-300 px-2 py-0.5 text-xs">sostituisce il corso esistente</span></template>
+            <template x-if="!node.exists"><span class="rounded-md bg-emerald-500/15 text-emerald-300 px-2 py-0.5 text-xs">nuovo</span></template>
+          </label>
+          <div class="mt-2 ml-7 space-y-1" x-show="node.mcs.length">
+            <template x-for="(m, i) in node.mcs" :key="i">
+              <label class="flex items-center gap-2 text-sm text-slate-300">
+                <input type="checkbox" x-model="m.checked" :disabled="node.locked" @change="if (m.checked) node.checked = true" class="h-4 w-4 accent-emerald-500">
+                <span x-text="m.bundle.microcourse?.title || m.bundle.microcourse?.slug || '—'"></span>
+                <span class="text-xs text-slate-500" x-text="`${(m.bundle.slides || []).length} slide · ${(m.bundle.quiz?.questions || []).length} domande`"></span>
+              </label>
+            </template>
+          </div>
+        </div>
+      </template>
+    </div>
+    <button type="submit" :disabled="busy || !chosen.length" class="rounded-lg bg-emerald-500 px-5 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-60" x-text="`⬆ Importa ${chosen.length} corsi`"></button>
+    <a href="/admin/corsi/" class="ml-2 rounded-lg border border-slate-700 px-5 py-2.5 hover:bg-slate-800 transition">Annulla</a>
+    <span x-show="progress" class="ml-3 text-sm text-slate-400" x-text="progress"></span>
+  </form>
+  </template>
+
+  <details class="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+    <summary class="cursor-pointer font-medium">📄 Struttura del file JSON</summary>
+    <p class="mt-3 text-xs text-slate-400">Un corso (<code>"kind": "course"</code>) o più corsi insieme (<code>"kind": "courses"</code>, con la lista <code>"courses"</code> di oggetti come questo):</p>
+    <pre class="mt-2 text-xs overflow-x-auto text-slate-300"><code>{
+  "version": "1.0", "kind": "course",
+  "course": {
+    "slug": "sql-injection", "title": "SQL Injection",
+    "description": "...", "icon": "🛡️", "is_published": true,
+    "lab_url": "https://...",
+    "presentations": [{ "title": "...", "url": "https://.../slide.pdf", "page_count": 12 }],
+    "resources": [{ "title": "...", "url": "https://..." }]
+  },
+  "microcourses": [
+    { "version": "1.0", "microcourse": {"slug": "...", "title": "..."},
+      "slides": [...], "images": [...], "quiz": {"questions": [...]} }
+  ]
+}</code></pre>
+    <p class="mt-2 text-xs text-slate-500">Laboratorio, presentazioni e risorse sono facoltativi: se mancano, si aggiungono dopo dalla pagina del corso.</p>
+  </details>
+</div>
+</div>

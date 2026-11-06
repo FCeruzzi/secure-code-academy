@@ -1,0 +1,80 @@
+---
+layout: layouts/admin.njk
+title: Importa domande · Pannello
+navActive: domande
+---
+<div x-data="adminQuestionImport">
+<div class="flex items-center justify-between gap-4 mb-6"><h1 class="text-2xl font-bold">Importa domande (JSON)</h1></div>
+<div class="max-w-5xl">
+  <nav class="text-sm text-slate-400 mb-4"><a href="/admin/domande/" class="hover:text-slate-200">← Banca domande</a></nav>
+  <p class="text-sm text-slate-400 mb-4 max-w-2xl">Scegli un file JSON esportato dalla banca domande: compare l'elenco delle domande che contiene e scegli con le caselle quali importare. Le domande scelte si <strong>aggiungono</strong> a quelle esistenti (gli argomenti mancanti vengono creati).</p>
+
+  <div class="max-w-2xl">
+    <div class="mb-4">
+      <label class="block text-sm font-medium mb-1 text-slate-300">File JSON delle domande <span class="text-rose-400">*</span></label>
+      <input type="file" accept="application/json,.json" x-ref="file" @change="loadFile()"
+             class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden font-[inherit]">
+      <template x-if="fileError"><p class="text-xs text-rose-400 mt-1" x-text="fileError"></p></template>
+    </div>
+  </div>
+
+  <template x-if="rows.length">
+  <form @submit.prevent="submit()" class="mb-8">
+    <label x-show="!consultant" class="mb-4 flex items-start gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-sm max-w-2xl">
+      <input type="checkbox" x-model="replace" @change="applyReplace()" class="mt-0.5 h-4 w-4 accent-amber-500">
+      <span><strong class="text-amber-200">Sostituisci tutta la banca</strong><br>
+        <span class="text-slate-300">Prima dell'import vengono eliminate tutte le domande che non stanno nel quiz di un microcorso. Quelle già usate in un torneo non si possono eliminare: vengono disattivate.</span></span>
+    </label>
+
+    <div class="flex flex-wrap items-center gap-2 mb-2 text-sm">
+      <span class="text-slate-300" x-text="`${checkedCount} di ${rows.length} domande selezionate`"></span>
+      <button type="button" @click="setAll(true)" class="rounded-md border border-slate-700 px-2.5 py-1 text-xs hover:bg-slate-800">Seleziona tutte</button>
+      <button type="button" @click="setAll(false)" class="rounded-md border border-slate-700 px-2.5 py-1 text-xs hover:bg-slate-800">Nessuna</button>
+      <button type="button" @click="setNewOnly()" class="rounded-md border border-slate-700 px-2.5 py-1 text-xs hover:bg-slate-800">Solo le nuove</button>
+      <span class="ml-auto text-xs text-slate-500" x-text="summary"></span>
+    </div>
+    <div class="overflow-y-auto max-h-[55vh] rounded-xl border border-slate-800 mb-4">
+      <table class="w-full table-fixed text-sm">
+        <thead class="sticky top-0 bg-slate-900 text-slate-400 text-left">
+          <tr><th class="px-3 py-2 w-10"></th><th class="px-3 py-2">Domanda</th><th class="px-3 py-2 w-14">Tipo</th><th class="px-3 py-2 w-40">Corso</th><th class="px-3 py-2 w-24">Difficoltà</th><th class="px-3 py-2 w-36">Stato</th></tr>
+        </thead>
+        <tbody class="divide-y divide-slate-800">
+          <template x-for="(r, i) in rows" :key="i">
+            <tr :class="r.checked ? '' : 'opacity-60'">
+              <td class="px-3 py-2"><input type="checkbox" x-model="r.checked" class="h-4 w-4 accent-emerald-500" :aria-label="`Importa la domanda ${i + 1}`"></td>
+              <td class="px-3 py-2"><div class="truncate" :title="(r.q.qtype === 'TRUE_FALSE' && String(r.q.data?.statement || '').trim()) || r.q.prompt" x-text="truncate((r.q.qtype === 'TRUE_FALSE' && String(r.q.data?.statement || '').trim()) || r.q.prompt || '—', 110)"></div></td>
+              <td class="px-3 py-2" :title="r.q.qtype" x-text="qtypeEmoji(r.q.qtype)"></td>
+              <td class="px-3 py-2 text-slate-400 truncate" x-text="r.q.course_title || r.q.course_slug || '—'"></td>
+              <td class="px-3 py-2" x-text="difficultyStars(r.q.difficulty)"></td>
+              <td class="px-3 py-2"><span class="rounded-md px-2 py-0.5 text-xs" :class="statusClass(r.status)" x-text="statusLabel(r.status)"></span></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+    <button type="submit" :disabled="busy || !checkedCount" class="rounded-lg bg-emerald-500 px-5 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-60" x-text="replace ? `⬆ Sostituisci la banca con ${checkedCount} domande` : `⬆ Importa ${checkedCount} domande`"></button>
+    <a href="/admin/domande/" class="ml-2 rounded-lg border border-slate-700 px-5 py-2.5 hover:bg-slate-800 transition">Annulla</a>
+    <span x-show="progress" class="ml-3 text-sm text-slate-400" x-text="progress"></span>
+  </form>
+  </template>
+
+  <details class="rounded-xl border border-slate-800 bg-slate-900/40 p-4 max-w-2xl">
+    <summary class="cursor-pointer font-medium">📄 Struttura del file JSON</summary>
+    <pre class="mt-3 text-xs overflow-x-auto text-slate-300"><code>{
+  "version": "1.0",
+  "kind": "questions",
+  "questions": [
+    { "qtype": "TRUE_FALSE", "prompt": "...", "explanation": "...",
+      "course_slug": "sql-injection", "course_title": "SQL Injection",
+      "difficulty": 1, "is_active": true,
+      "data": { "statement": "...", "answer": true } },
+    { "qtype": "FIND_WRONG_LINE", "prompt": "...", "course_slug": "sql-injection", "difficulty": 2,
+      "data": { "language": "java",
+                "files": [{ "name": "web/OrderController.java", "content": "..." },
+                          { "name": "application.yml", "content": "...", "language": "yaml" }],
+                "correct_lines": [{ "file": "web/OrderController.java", "line": 14 }] } }
+  ]
+}</code></pre>
+  </details>
+</div>
+</div>

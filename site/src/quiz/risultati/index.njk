@@ -1,0 +1,26 @@
+---
+layout: layouts/base.njk
+title: Risultati · Secure Code Academy
+---
+<div x-data="quizResultsPage" x-init="load()">
+{% include "partials/loading.njk" %}
+<template x-if="state === 'ready'">
+<div class="max-w-xl mx-auto text-center py-10">
+  <div class="text-5xl mb-4" x-text="pct >= 80 ? '🏆' : pct >= 50 ? '👍' : '📚'"></div>
+  <h1 class="text-3xl font-bold">Quiz completato!</h1>
+
+  <div class="my-8 inline-flex flex-col items-center justify-center h-40 w-40 rounded-full border-4"
+       :class="pct >= 80 ? 'border-emerald-500' : pct >= 50 ? 'border-amber-500' : 'border-rose-500'">
+    <span class="text-4xl font-bold" x-text="`${pct}%`"></span>
+    <span class="text-sm text-slate-400" x-text="`${correct} / ${total}`"></span>
+  </div>
+
+  <p class="text-slate-400" x-text="pct >= 80 ? 'Ottimo lavoro! Hai padroneggiato l\'argomento.' : pct >= 50 ? 'Buon risultato, ma puoi ancora migliorare.' : 'Rivedi la teoria e riprova: ce la farai!'"></p>
+
+  <div class="mt-8 flex items-center justify-center gap-3">
+    <a :href="url('quiz/', { m: mc.id })" class="rounded-xl border border-slate-700 px-5 py-2.5 hover:bg-slate-800 transition">↻ Riprova</a>
+    <a :href="mcUrl()" class="rounded-xl bg-emerald-500 px-5 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 transition">Torna al microcorso</a>
+  </div>
+</div>
+</template>
+</div>

@@ -1,0 +1,98 @@
+{% import "forms.njk" as f %}
+<div x-data="adminTournamentForm">
+{% include "partials/loading.njk" %}
+<template x-if="state === 'ready'">
+<div>
+<div class="flex items-center justify-between gap-4 mb-6"><h1 class="text-2xl font-bold" x-text="title"></h1></div>
+<form @submit.prevent="submit()" class="max-w-2xl">
+  {{ f.input("title", "Titolo", required=true, attrs='maxlength="200"') }}
+  {{ f.input("slug", "Slug", help="Lascia vuoto per generarlo dal titolo.", attrs='maxlength="210"') }}
+  {{ f.textarea("description", "Descrizione", rows=3) }}
+  <div class="mb-4">
+    <span class="block text-sm font-medium mb-2 text-slate-300">Domande del torneo</span>
+    <div class="flex flex-col gap-1.5 text-sm text-slate-200 mb-3">
+      <label class="flex items-center gap-2 w-fit"><input type="radio" name="mode" value="courses" x-model="mode" class="accent-emerald-500"> Estratte a caso dalla banca dei corsi selezionati</label>
+      <label class="flex items-center gap-2 w-fit"><input type="radio" name="mode" value="pick" x-model="mode" @change="loadBank()" class="accent-emerald-500"> Scelte da me dalla banca domande</label>
+    </div>
+    <template x-if="mode === 'courses'">
+      <div>
+        <div class="space-y-1.5 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
+          <template x-for="c in allCourses" :key="c.id">
+            <label class="flex items-center gap-2 text-sm text-slate-200"><input type="checkbox" :value="String(c.id)" x-model="form.courses" class="h-4 w-4 rounded-sm border-slate-600 bg-slate-900 accent-emerald-500"> <span x-text="c.title"></span></label>
+          </template>
+          <template x-if="!allCourses.length"><p class="text-sm text-slate-500">Nessun corso disponibile. Crea prima dei corsi.</p></template>
+        </div>
+        <p class="text-xs text-slate-500 mt-1">Le domande vengono estratte casualmente dalla banca dei corsi selezionati. Quelle usate nei quiz dei microcorsi sono escluse: il quiz pubblico ne mostra la soluzione.</p>
+      </div>
+    </template>
+    {{ f.errorsOf("courses") }}
+
+    <template x-if="mode === 'pick'">
+      <div class="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
+        <div class="grid sm:grid-cols-4 gap-2 mb-2">
+          <select x-model="bankFilter.course" class="rounded-lg bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100">
+            <option value="">Tutti i corsi</option>
+            <template x-for="c in allCourses" :key="c.id"><option :value="String(c.id)" x-text="c.title"></option></template>
+          </select>
+          <select x-model="bankFilter.qtype" class="rounded-lg bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100">
+            <option value="">Tutti i tipi</option>
+            <template x-for="[k, label] in qtypes" :key="k"><option :value="k" x-text="label"></option></template>
+          </select>
+          <select x-model="bankFilter.difficulty" class="rounded-lg bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100">
+            <option value="">Ogni difficoltà</option>
+            <option value="1">Base</option><option value="2">Intermedio</option><option value="3">Avanzato</option>
+          </select>
+          <input type="search" x-model="bankFilter.q" placeholder="Cerca nel testo…" class="rounded-lg bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100">
+        </div>
+        <div class="flex flex-wrap items-center gap-3 text-xs mb-2">
+          <span class="text-slate-400"><strong class="text-slate-200" x-text="form.question_ids.length"></strong> scelte · <span x-text="filteredBank.length"></span> mostrate</span>
+          <button type="button" @click="pickFiltered(true)" class="text-emerald-300 hover:underline">Scegli le mostrate</button>
+          <button type="button" @click="pickFiltered(false)" class="text-slate-300 hover:underline">Togli le mostrate</button>
+          <button type="button" @click="form.question_ids = []" class="text-slate-400 hover:underline">Nessuna</button>
+        </div>
+        <template x-if="bankState === 'loading'"><p class="text-sm text-slate-500">Caricamento della banca…</p></template>
+        <div class="max-h-96 overflow-y-auto rounded-lg border border-slate-800 divide-y divide-slate-800">
+          <template x-for="q in filteredBank" :key="q.id">
+            <label class="flex items-start gap-2 px-3 py-2 text-sm hover:bg-slate-800/40 cursor-pointer">
+              <input type="checkbox" :value="q.id" x-model.number="form.question_ids" class="mt-0.5 h-4 w-4 rounded-sm border-slate-600 bg-slate-900 accent-emerald-500">
+              <span class="min-w-0 flex-1">
+                <span class="block truncate text-slate-200" :title="q.summary || q.prompt" x-text="q.summary || q.prompt"></span>
+                <span class="text-xs text-slate-500"><span x-text="qtypeLabel(q.qtype)"></span> · <span x-text="q.course_title || 'Senza corso'"></span> · <span x-text="difficultyLabel(q.difficulty)"></span></span>
+              </span>
+            </label>
+          </template>
+          <template x-if="bankState === 'ready' && !filteredBank.length"><p class="px-3 py-2 text-sm text-slate-500">Nessuna domanda con questi filtri.</p></template>
+        </div>
+        <p class="text-xs text-slate-500 mt-1">Solo domande attive e fuori dai quiz dei microcorsi: il quiz pubblico ne mostra la soluzione.</p>
+      </div>
+    </template>
+    {{ f.errorsOf("question_ids") }}
+
+    <div class="mt-3 rounded-lg border border-slate-800 bg-slate-950/40 p-3">
+      <p class="text-xs text-slate-400 mb-2">Ogni round rispetta il mix: <strong>15% Vero / Falso, 15% Scelta multipla, 30% Individua la riga errata, 40% Confronto di codice</strong>. Se le domande non bastano per tutti i round, la gara non parte.</p>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <template x-for="row in mixRows" :key="row.qtype">
+          <div class="rounded-lg border px-2.5 py-2 text-xs" :class="row.ok === false ? 'border-rose-500/50 bg-rose-500/5' : 'border-slate-800'">
+            <div class="text-slate-300" x-text="`${row.pct}% ${row.label}`"></div>
+            <template x-if="row.perRound !== null"><div class="text-slate-400 font-mono" x-text="`${row.perRound} per round${rounds > 1 ? ` · ${row.needed} in tutto` : ''}`"></div></template>
+            <template x-if="mode === 'pick'"><div :class="row.ok === false ? 'text-rose-300' : 'text-emerald-300'" x-text="`${row.chosen} scelte`"></div></template>
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
+  {{ f.input("pool_size", "Domande per round", type="number", help="Quante domande per round estrarre dal pool. Vuoto: tutte quelle che il mix permette (con le domande scelte da te: tutte, divise per i round).", attrs='min="1"') }}
+  {{ f.input("num_rounds", "Numero di round", type="number", required=true, help="Numero di round; i punteggi si sommano tra i round.", attrs='min="1"') }}
+  {{ f.input("per_question_seconds", "Secondi per domanda", type="number", required=true, help="Secondi a disposizione per ogni domanda (default 60).", attrs='min="1"') }}
+  {{ f.input("start_delay_seconds", "Secondi prima della prima domanda", type="number", required=true, help="All'avvio della gara e di ogni round la prima domanda compare dopo questi secondi, a tutti insieme e con il tempo pieno (da 3 a 60, predefinito 5).", attrs='min="3" max="60"') }}
+  {{ f.input("reveal_seconds", "Secondi per mostrare la soluzione", type="number", required=true, help="Per quanti secondi la soluzione e la spiegazione restano visibili a tutti prima della domanda successiva (minimo 10, predefinito 10).", attrs='min="10"') }}
+  {{ f.input("points_correct", "Punti per risposta corretta", type="number", required=true, help="Punti base per ogni risposta corretta; su questi si calcola anche l'eventuale bonus velocità.", attrs='min="0"') }}
+  {{ f.checkbox("time_bonus", "Bonus velocità", help="Assegna punti extra proporzionali al tempo rimasto: chi risponde subito arriva quasi a raddoppiare i punti, chi risponde allo scadere non prende bonus.") }}
+  <div class="flex gap-3 mt-6">
+    <button type="submit" :disabled="busy" class="rounded-lg bg-emerald-500 px-5 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-60">💾 Salva</button>
+    <a href="/admin/tornei/" class="rounded-lg border border-slate-700 px-5 py-2.5 hover:bg-slate-800 transition">Annulla</a>
+  </div>
+</form>
+</div>
+</template>
+</div>

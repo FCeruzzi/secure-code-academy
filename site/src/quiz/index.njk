@@ -1,0 +1,22 @@
+---
+layout: layouts/base.njk
+title: Quiz · Secure Code Academy
+---
+<div x-data="quizStartPage" x-init="load()">
+{% include "partials/loading.njk" %}
+<template x-if="state === 'ready'">
+<div class="max-w-2xl mx-auto text-center py-8">
+  <nav class="text-sm text-slate-400 mb-6 text-left">
+    <a :href="mcUrl()" class="hover:text-slate-200">← <span x-text="mc.title"></span></a>
+  </nav>
+  <div class="text-5xl mb-4">🧠</div>
+  <h1 class="text-3xl font-bold">Quiz: <span x-text="mc.title"></span></h1>
+  <p class="mt-3 text-slate-400"><span x-text="`${total} domand${total === 1 ? 'a' : 'e'}`"></span> per verificare quello che hai imparato.
+    Riceverai un riscontro immediato dopo ogni risposta.</p>
+  <a :href="url('quiz/gioca/', { m: mc.id })"
+     class="mt-8 inline-flex items-center gap-2 rounded-xl bg-violet-500 px-6 py-3 font-semibold text-slate-950 hover:bg-violet-400 transition">
+    ▶ Inizia il quiz
+  </a>
+</div>
+</template>
+</div>

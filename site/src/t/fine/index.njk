@@ -1,0 +1,33 @@
+---
+layout: layouts/base.njk
+title: Classifica · Torneo
+---
+<div x-data="tournamentPage('finish')" x-init="load()">
+{% include "partials/loading.njk" %}
+<template x-if="state === 'ready'">
+<div class="max-w-2xl mx-auto py-8">
+  <div class="text-center mb-6">
+    <div class="text-5xl mb-2">🏆</div>
+    <h1 class="text-2xl font-bold">Classifica finale</h1>
+    <p class="text-slate-400" x-text="t.title"></p>
+  </div>
+  <ol class="space-y-2">
+    <template x-for="(p, i) in participants" :key="p.id">
+      <li class="flex items-center gap-3 rounded-xl border px-4 py-3"
+          :class="[(me && p.id === me.id) ? 'border-emerald-500/60 bg-emerald-500/10' : 'border-slate-800 bg-slate-900/50', i === 0 ? 'ring-1 ring-amber-400/50' : '']">
+        <span class="w-7 text-center font-bold" :class="i === 0 ? 'text-amber-400' : i === 1 ? 'text-slate-300' : i === 2 ? 'text-orange-400' : 'text-slate-500'" x-text="i + 1"></span>
+        <span class="text-2xl" x-text="avatar(p.avatar_key)"></span>
+        <span class="flex-1 font-medium truncate"><span x-text="p.display_name"></span><template x-if="me && p.id === me.id"><span class="text-xs text-emerald-400"> (tu)</span></template></span>
+        <span class="font-mono font-semibold text-emerald-300" x-text="p.score"></span>
+      </li>
+    </template>
+    <template x-if="!participants.length">
+      <li class="rounded-xl border border-slate-800 bg-slate-900/50 px-4 py-6 text-center text-slate-500">Nessun partecipante.</li>
+    </template>
+  </ol>
+  <div class="mt-8 text-center">
+    <a href="/" class="rounded-xl border border-slate-700 px-5 py-2.5 hover:bg-slate-800 transition">Home</a>
+  </div>
+</div>
+</template>
+</div>

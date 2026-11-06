@@ -1,0 +1,26 @@
+{% import "forms.njk" as f %}
+<div x-data="adminQuestionMeta">
+{% include "partials/loading.njk" %}
+<template x-if="state === 'ready'">
+<div>
+<div class="flex items-center justify-between gap-4 mb-6"><h1 class="text-2xl font-bold" x-text="title"></h1></div>
+<div class="max-w-2xl">
+  <template x-if="step1">
+    <p class="text-sm text-slate-400 mb-4">Passo 1 di 2: scegli tipo, corso e difficoltà e scrivi il testo della domanda e la spiegazione. Al passo successivo inserirai il <strong>contenuto</strong> della domanda a tutto schermo.</p>
+  </template>
+  <form @submit.prevent="submit()">
+    {{ f.select("qtype", "Tipo", "QTYPES", required=true) }}
+    {{ f.select("course_id", "Corso", "courses.map(c => [String(c.id), c.title])") }}
+    {{ f.select("difficulty", "Difficoltà", "DIFFICULTIES.map(d => [String(d[0]), d[1]])", required=true, blank="") }}
+    {{ f.textarea("prompt", "Testo della domanda", rows=3, required=true) }}
+    {{ f.textarea("explanation", "Spiegazione", rows=3) }}
+    {{ f.checkbox("is_active", "Attiva", help="Se attiva la domanda può essere estratta nei quiz dei microcorsi e nei tornei; se disattivata resta in archivio ma non viene mai proposta.") }}
+    <div class="flex gap-3 mt-4">
+      <button type="submit" :disabled="busy" class="rounded-lg bg-emerald-500 px-5 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-60" x-text="step1 ? 'Continua → contenuto' : '💾 Salva dati'"></button>
+      <a :href="backUrl" class="rounded-lg border border-slate-700 px-5 py-2.5 hover:bg-slate-800 transition">Annulla</a>
+    </div>
+  </form>
+</div>
+</div>
+</template>
+</div>

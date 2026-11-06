@@ -1,0 +1,14 @@
+<template x-if="state === 'loading'">
+  <div class="py-16 text-center text-sm text-slate-500">Caricamento…</div>
+</template>
+<template x-if="state === 'notfound'">
+  <div>{% include "partials/notfound.njk" %}</div>
+</template>
+<template x-if="state === 'error'">
+  <div class="max-w-md mx-auto py-16 text-center">
+    <div class="text-5xl mb-3">⚠️</div>
+    <h1 class="text-2xl font-bold">Errore</h1>
+    <p class="mt-2 text-slate-400" x-text="error || 'Si è verificato un problema imprevisto. Riprova più tardi.'"></p>
+    <a href="/" class="mt-6 inline-block rounded-xl border border-slate-700 px-5 py-2.5 hover:bg-slate-800 transition">← Torna alla home</a>
+  </div>
+</template>

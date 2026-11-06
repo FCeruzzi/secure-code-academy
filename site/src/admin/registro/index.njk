@@ -1,0 +1,39 @@
+---
+layout: layouts/admin.njk
+title: Registro attività · Pannello
+navActive: amministratori
+---
+<div x-data="adminAudit">
+<div class="flex items-center justify-between gap-4 mb-6">
+  <h1 class="text-2xl font-bold">Registro attività</h1>
+  <a href="/admin/amministratori/" class="rounded-lg border border-slate-700 px-4 py-2 text-sm hover:bg-slate-800 transition">← Amministratori</a>
+</div>
+{% include "partials/loading.njk" %}
+<template x-if="state === 'ready'">
+<div>
+<p class="text-sm text-slate-400 mb-4">Accessi e azioni sugli account degli amministratori, le più recenti per prime (ultime 200).</p>
+<div class="overflow-x-auto rounded-xl border border-slate-800">
+  <table class="w-full text-sm">
+    <thead class="bg-slate-900/70 text-slate-400 text-left">
+      <tr><th class="px-4 py-3">Quando</th><th class="px-4 py-3">Chi</th><th class="px-4 py-3">Azione</th><th class="px-4 py-3">Account</th><th class="px-4 py-3">Dettagli</th><th class="px-4 py-3">IP</th></tr>
+    </thead>
+    <tbody class="divide-y divide-slate-800">
+      <template x-for="e in entries" :key="e.id">
+        <tr>
+          <td class="px-4 py-2 whitespace-nowrap text-slate-400" x-text="formatDateTime(e.at)"></td>
+          <td class="px-4 py-2" x-text="e.actor || '—'"></td>
+          <td class="px-4 py-2"><span :class="actionClass(e.action)" class="rounded-md px-2 py-0.5 text-xs" x-text="actionLabel(e.action)"></span></td>
+          <td class="px-4 py-2" x-text="e.target || '—'"></td>
+          <td class="px-4 py-2 text-slate-400" x-text="e.details || ''"></td>
+          <td class="px-4 py-2 text-slate-500 font-mono text-xs" x-text="e.ip || ''"></td>
+        </tr>
+      </template>
+      <template x-if="!entries.length">
+        <tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">Nessuna attività registrata.</td></tr>
+      </template>
+    </tbody>
+  </table>
+</div>
+</div>
+</template>
+</div>

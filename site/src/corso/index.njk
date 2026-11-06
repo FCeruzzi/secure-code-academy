@@ -1,0 +1,75 @@
+---
+layout: layouts/base.njk
+title: Corso · Secure Code Academy
+---
+<div x-data="coursePage" x-init="load()">
+{% include "partials/loading.njk" %}
+<template x-if="state === 'ready'">
+<div>
+<a href="/corsi/" class="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium hover:bg-slate-800 transition mb-6">← Indietro ai corsi</a>
+
+<header class="flex items-start gap-4 mb-8">
+  <div class="text-5xl" x-text="course.icon || '🧩'"></div>
+  <div>
+    <h1 class="text-3xl font-bold" x-text="course.title"></h1>
+    <p class="mt-2 text-slate-400 max-w-2xl" x-text="course.description"></p>
+  </div>
+</header>
+
+<template x-if="presentations.length || course.lab_url">
+<section class="grid gap-3 sm:grid-cols-2 mb-6">
+  <template x-for="p in presentations" :key="p.id">
+    <a :href="url('presentazione/', { c: course.slug, p: p.id })" class="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/40 p-4 hover:border-sky-500/50 transition">
+      <span class="text-2xl">📊</span>
+      <div><div class="font-medium" x-text="p.title || 'Presentazione del corso'"></div><div class="text-xs text-slate-500" x-text="'Slide' + (p.page_count ? ` · ${p.page_count} pagine` : '')"></div></div>
+    </a>
+  </template>
+  <template x-if="course.lab_url">
+    <a :href="$safeUrl(course.lab_url)" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 hover:border-emerald-500/60 transition">
+      <span class="text-2xl">🧪</span>
+      <div class="min-w-0"><div class="font-medium text-emerald-200">Laboratorio pratico ↗</div><div class="text-xs text-emerald-400/70 truncate" x-text="course.lab_url"></div></div>
+    </a>
+  </template>
+</section>
+</template>
+
+<template x-if="resources.length">
+<section class="mb-8 rounded-xl border border-slate-800 bg-slate-900/40 p-5">
+  <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-400 mb-3">🔗 Risorse consigliate</h2>
+  <ul class="space-y-1.5">
+    <template x-for="r in resources" :key="r.url + r.title">
+      <li><a :href="$safeUrl(r.url)" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-sm text-sky-300 hover:underline">↗ <span x-text="r.title"></span></a></li>
+    </template>
+  </ul>
+</section>
+</template>
+
+<h2 class="text-lg font-semibold mb-4 text-slate-300">Microcorsi</h2>
+<template x-if="microcourses.length">
+  <div class="space-y-3">
+    <template x-for="(mc, i) in microcourses" :key="mc.id">
+      <a :href="mcUrl(mc)"
+         class="group flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/50 p-4 hover:border-emerald-500/50 hover:bg-slate-900 transition">
+        <div class="flex items-center gap-4">
+          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-800 text-sm font-semibold text-emerald-400" x-text="i + 1"></div>
+          <div>
+            <div class="font-medium group-hover:text-emerald-400 transition" x-text="mc.title"></div>
+            <div class="text-sm text-slate-400 line-clamp-1" x-text="mc.summary"></div>
+          </div>
+        </div>
+        <div class="hidden sm:flex items-center gap-3 text-xs text-slate-500">
+          <span x-text="`⏱ ${mc.estimated_minutes} min`"></span>
+          <span class="rounded-full border border-slate-700 px-2 py-0.5 font-medium text-slate-300" x-text="difficultyLabel(mc.difficulty)"></span>
+        </div>
+      </a>
+    </template>
+  </div>
+</template>
+<template x-if="!microcourses.length">
+  <div class="rounded-2xl border border-dashed border-slate-800 p-10 text-center text-slate-500">
+    Nessun microcorso pubblicato in questo corso.
+  </div>
+</template>
+</div>
+</template>
+</div>

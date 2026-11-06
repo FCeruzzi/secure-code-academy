@@ -1,0 +1,3 @@
+# Copia in .dev.vars per `wrangler dev`: sovrascrive le [vars] di wrangler.toml.
+SITE_ORIGIN=http://localhost:8080
+ADMIN_USERNAMES=admin

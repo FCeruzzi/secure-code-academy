@@ -1,0 +1,211 @@
+---
+layout: layouts/admin.njk
+title: Contenuto della domanda · Pannello
+navActive: domande
+mainWidth: max-w-none
+---
+{% import "forms.njk" as f %}
+<div x-data="adminQuestionContent">
+<div class="flex items-center justify-between gap-4 mb-6">
+  <h1 class="text-2xl font-bold">Modifica domanda</h1>
+</div>
+{% include "partials/loading.njk" %}
+<template x-if="state === 'ready'">
+<div>
+<nav class="text-sm text-slate-400 mb-4"><a href="/admin/domande/" class="hover:text-slate-200">← Banca domande</a></nav>
+
+<form @submit.prevent="submit()">
+  <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-5 mb-4">
+    <div class="font-semibold mb-4">📋 Dati della domanda</div>
+    <div class="grid sm:grid-cols-3 gap-x-4">
+      {{ f.select("qtype", "Tipo", "QTYPES", required=true, blank="") }}
+      {{ f.select("course_id", "Corso", "courses.map(c => [String(c.id), c.title])") }}
+      {{ f.select("difficulty", "Difficoltà", "DIFFICULTIES.map(d => [String(d[0]), d[1]])", required=true, blank="") }}
+    </div>
+    <p class="text-xs text-slate-500 -mt-2 mb-4" x-show="question && qtype !== question.qtype">Il tipo è cambiato: compila qui sotto il contenuto per il nuovo tipo. Viene salvato tutto insieme.</p>
+    {{ f.textarea("prompt", "Testo della domanda", rows=3, required=true) }}
+    {{ f.textarea("explanation", "Spiegazione", rows=3, help="Mostrata dopo la risposta, nei quiz e nei report dei tornei.") }}
+    {{ f.checkbox("is_active", "Attiva", help="Se attiva la domanda può essere estratta nei quiz dei microcorsi e nei tornei; se disattivata resta in archivio ma non viene mai proposta.") }}
+  </div>
+
+  <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-5 mb-4">
+    <div class="font-semibold mb-1">✏️ Contenuto della domanda</div>
+    <p class="text-xs text-slate-500 mb-4">Compila i campi con l'editor: l'anteprima mostra come apparirà la domanda una volta pubblicata.</p>
+
+    <template x-if="qtype === 'TRUE_FALSE'">
+      <div>
+        <label class="block text-sm font-medium mb-1 text-slate-300">Affermazione</label>
+        <textarea x-model="tf.statement" rows="2" placeholder="Es. Le query parametrizzate prevengono la SQL injection."
+          class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden"></textarea>
+        <p class="text-xs text-slate-500 mt-3 mb-2">Risposta corretta:</p>
+        <div class="grid grid-cols-2 gap-3">
+          <button type="button" @click="tf.answer = true"
+            :class="tf.answer ? 'border-emerald-500 bg-emerald-500/10 text-emerald-300' : 'border-slate-700 text-slate-300'"
+            class="rounded-xl border p-4 text-center font-semibold transition">✔ Vero</button>
+          <button type="button" @click="tf.answer = false"
+            :class="!tf.answer ? 'border-rose-500 bg-rose-500/10 text-rose-300' : 'border-slate-700 text-slate-300'"
+            class="rounded-xl border p-4 text-center font-semibold transition">✘ Falso</button>
+        </div>
+      </div>
+    </template>
+
+    <template x-if="qtype === 'MULTIPLE_CHOICE'">
+      <div>
+        <label class="flex items-center gap-2 text-sm text-slate-300 mb-4">
+          <input type="checkbox" x-model="mc.multiple" @change="normalizeCorrect()"
+            class="h-4 w-4 rounded-sm border-slate-600 bg-slate-900 accent-emerald-500">
+          <span>Più risposte corrette (checkbox invece di scelta singola)</span>
+        </label>
+        <div class="space-y-2">
+          <template x-for="(opt, i) in mc.options" :key="i">
+            <div class="flex items-center gap-2">
+              <button type="button" @click="mc.multiple ? (opt.ok = !opt.ok) : pickSingle(i)"
+                :class="opt.ok ? 'border-emerald-500 bg-emerald-500/20 text-emerald-300' : 'border-slate-600 text-slate-600'"
+                class="h-9 w-9 shrink-0 rounded-lg border flex items-center justify-center transition">
+                <span x-show="opt.ok">✓</span>
+              </button>
+              <span class="font-mono text-xs uppercase text-slate-500 w-5 text-center" x-text="optLetter(i)"></span>
+              <input type="text" x-model="opt.text" placeholder="Testo dell'opzione"
+                class="flex-1 rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden">
+              <button type="button" @click="removeOption(i)" x-show="mc.options.length > 2"
+                class="text-slate-500 hover:text-rose-400 px-2" title="Rimuovi">✕</button>
+            </div>
+          </template>
+        </div>
+        <button type="button" @click="addOption()" class="mt-3 text-sm text-emerald-300 hover:underline">+ Aggiungi opzione</button>
+        <p class="text-xs text-slate-500 mt-2">Clicca il quadratino a sinistra per segnare la/e risposta/e corretta/e. Nei quiz e nei tornei le opzioni vengono mescolate e rietichettate A, B, C… nell'ordine in cui compaiono: la risposta corretta resta quella che hai segnato, in qualunque posizione finisca.</p>
+      </div>
+    </template>
+
+    <template x-if="qtype === 'FIND_WRONG_LINE'">
+      <div>
+        <div class="mb-3 max-w-xs">
+          <label class="block text-sm font-medium mb-1 text-slate-300">Linguaggio</label>
+          <select x-model="fwl.language" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden">
+            <template x-for="l in languages" :key="l"><option :value="l" x-text="l" :selected="l === fwl.language"></option></template>
+          </select>
+        </div>
+        <p class="text-xs text-slate-500 mb-3">Un solo file chiamato «codice» è un blocco di codice; con più file la domanda diventa un piccolo progetto, navigabile dal menu dei file.</p>
+        <div class="space-y-3">
+          <template x-for="(file, i) in fwl.files" :key="i">
+            <div class="rounded-lg border bg-slate-950/60 p-2" :class="fwl.f === i ? 'border-emerald-500/50' : 'border-slate-800'">
+              <div class="flex flex-wrap items-center gap-2 mb-1">
+                <span class="text-slate-600">📄</span>
+                <input type="text" x-model="file.name" @focus="fwl.f = i" placeholder="Nome file (es. web/OrderController.java)"
+                  class="flex-1 min-w-48 rounded-sm bg-slate-900 border border-slate-700 px-2 py-1 text-xs font-mono text-slate-100 focus:border-emerald-500 outline-hidden">
+                <select x-model="file.language" title="Linguaggio del file" class="rounded-sm bg-slate-900 border border-slate-700 px-2 py-1 text-xs text-slate-100">
+                  <option value="">come la domanda</option>
+                  <template x-for="l in languages" :key="l"><option :value="l" x-text="l" :selected="l === file.language"></option></template>
+                </select>
+                <label class="flex items-center gap-1 text-xs text-slate-400">prima riga
+                  <input type="number" min="1" x-model.number="file.start_line" class="w-16 rounded-sm bg-slate-900 border border-slate-700 px-2 py-1 text-xs text-slate-100">
+                </label>
+                <button type="button" @click="removeWrongLineFile(i)" x-show="fwl.files.length > 1" class="text-slate-500 hover:text-rose-400 px-1" title="Rimuovi file">✕</button>
+              </div>
+              <textarea x-model="file.content" @focus="fwl.f = i" rows="5" spellcheck="false" placeholder="Contenuto del file…"
+                class="w-full rounded-sm bg-slate-950 border border-slate-800 px-2 py-1.5 text-xs font-mono text-slate-100 focus:border-emerald-500 outline-hidden"></textarea>
+            </div>
+          </template>
+        </div>
+        <button type="button" @click="addWrongLineFile()" class="mt-2 text-sm text-emerald-300 hover:underline">+ Aggiungi file</button>
+        <div class="mt-3 rounded-xl border border-slate-800 bg-slate-950 overflow-hidden">
+          <div class="flex flex-wrap items-center gap-1 px-3 py-2 text-xs text-slate-500 border-b border-slate-800">
+            <span class="mr-2">Anteprima — clicca le righe vulnerabili/errate</span>
+            <template x-for="(file, i) in fwl.files" :key="i">
+              <button type="button" @click="fwl.f = i" x-show="fwl.files.length > 1"
+                :class="fwl.f === i ? 'bg-slate-800 text-emerald-300' : 'hover:bg-slate-800/60'" class="rounded-sm px-2 py-0.5 font-mono">
+                <span x-text="file.name || ('file ' + (i + 1))"></span><span x-show="fileHasBadLine(i)" class="ml-1 text-rose-300">●</span>
+              </button>
+            </template>
+          </div>
+          <div class="max-h-72 overflow-auto text-sm leading-6">
+            <template x-for="(line, i) in fwlLines" :key="fwl.f + ':' + i">
+              <button type="button" @click="toggleLine(i)"
+                :class="isBadLine(i) ? 'bg-rose-500/25 ring-1 ring-rose-500/40' : 'hover:bg-slate-800/60'"
+                class="w-full text-left flex gap-3 px-3 py-0.5 transition">
+                <span class="w-8 shrink-0 text-right text-slate-600 select-none font-mono" x-text="lineNo(i)"></span>
+                <span class="font-mono whitespace-pre" x-text="line || ' '"></span>
+              </button>
+            </template>
+          </div>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">Righe errate: <span class="text-rose-300 font-mono" x-text="sortedLines() || '—'"></span></p>
+      </div>
+    </template>
+
+    <template x-if="qtype === 'CODE_COMPARISON'">
+      <div>
+        <div class="grid sm:grid-cols-3 gap-3 mb-3">
+          <div>
+            <label class="block text-sm font-medium mb-1 text-slate-300">Linguaggio</label>
+            <select x-model="cc.language" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden">
+              <template x-for="l in languages" :key="l"><option :value="l" x-text="l" :selected="l === cc.language"></option></template>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1 text-slate-300">Etichetta A</label>
+            <input type="text" x-model="cc.label_a" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden">
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1 text-slate-300">Etichetta B</label>
+            <input type="text" x-model="cc.label_b" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden">
+          </div>
+        </div>
+        <p class="text-xs text-slate-500 -mt-1 mb-3">Le etichette indicano la posizione: l'etichetta A va sempre sul pannello di sinistra, la B su quello di destra. I due codici invece vengono mescolati, quindi chi risponde non può capire dall'etichetta quale sia la versione corretta.</p>
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-1 text-slate-300">Versione corretta (sicura)</label>
+          <div class="inline-flex rounded-lg border border-slate-700 overflow-hidden">
+            <button type="button" @click="cc.correct = 'a'" :class="cc.correct === 'a' ? 'bg-emerald-500 text-slate-950' : 'text-slate-300 hover:bg-slate-800'" class="px-5 py-1.5 text-sm font-semibold transition">A</button>
+            <button type="button" @click="cc.correct = 'b'" :class="cc.correct === 'b' ? 'bg-emerald-500 text-slate-950' : 'text-slate-300 hover:bg-slate-800'" class="px-5 py-1.5 text-sm font-semibold transition">B</button>
+          </div>
+        </div>
+        <div class="grid md:grid-cols-2 gap-4">
+          <template x-for="side in ['a','b']" :key="side">
+            <div class="rounded-xl border p-3" :class="cc.correct === side ? 'border-emerald-500/60 ring-1 ring-emerald-500/30' : 'border-slate-700'">
+              <div class="flex items-center justify-between mb-2">
+                <span class="font-semibold text-sm" x-text="side === 'a' ? cc.label_a : cc.label_b"></span>
+                <span x-show="cc.correct === side" class="text-xs text-emerald-300">✓ corretta</span>
+              </div>
+              <div class="space-y-3">
+                <template x-for="(fl, i) in filesOf(side)" :key="i">
+                  <div class="rounded-lg border border-slate-800 bg-slate-950/60 p-2">
+                    <div class="flex items-center gap-2 mb-1">
+                      <span class="text-slate-600">📄</span>
+                      <input type="text" x-model="fl.name" placeholder="Nome file (es. UserDao.java)"
+                        class="flex-1 rounded-sm bg-slate-900 border border-slate-700 px-2 py-1 text-xs font-mono text-slate-100 focus:border-emerald-500 outline-hidden">
+                      <select x-model="fl.language" title="Linguaggio del file" class="rounded-sm bg-slate-900 border border-slate-700 px-1 py-1 text-xs text-slate-100">
+                        <option value="">come la domanda</option>
+                        <template x-for="l in languages" :key="l"><option :value="l" x-text="l" :selected="l === fl.language"></option></template>
+                      </select>
+                      <button type="button" @click="removeFile(side, i)" x-show="filesOf(side).length > 1" class="text-slate-500 hover:text-rose-400 px-1" title="Rimuovi file">✕</button>
+                    </div>
+                    <textarea x-model="fl.content" rows="6" spellcheck="false" placeholder="Contenuto del file…"
+                      class="w-full rounded-sm bg-slate-950 border border-slate-800 px-2 py-1.5 text-xs font-mono text-slate-100 focus:border-emerald-500 outline-hidden"></textarea>
+                  </div>
+                </template>
+              </div>
+              <button type="button" @click="addFile(side)" class="mt-2 text-sm text-emerald-300 hover:underline">+ Aggiungi file</button>
+            </div>
+          </template>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">Consigliati almeno 6 file per lato per simulare un progetto reale; i file uguali nelle due versioni nascondono meglio la differenza.</p>
+      </div>
+    </template>
+  </div>
+
+  <div class="flex gap-3 mt-4">
+    <button type="submit" :disabled="busy" class="rounded-lg bg-emerald-500 px-5 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-60">💾 Salva domanda</button>
+    <a href="/admin/domande/" class="rounded-lg border border-slate-700 px-5 py-2.5 hover:bg-slate-800 transition">Annulla</a>
+  </div>
+</form>
+
+<details class="mt-6 rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+  <summary class="cursor-pointer text-sm font-medium">JSON della domanda</summary>
+  <div class="mt-3">
+    <button type="button" @click="download()" class="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold hover:bg-slate-700 transition mb-2">⬇ Scarica JSON</button>
+    <pre class="overflow-x-auto rounded-lg bg-slate-950 border border-slate-800 p-3 text-xs text-slate-300"><code x-text="jsonText"></code></pre>
+  </div>
+</details>
+</div>
+</template>
+</div>

@@ -1,0 +1,201 @@
+/* Tailwind CSS 4, configurato tutto qui (niente tailwind.config.js). */
+@import "tailwindcss" source(none);
+@plugin "@tailwindcss/typography";
+
+/* Dove cercare le classi: i template e i componenti Alpine. */
+@source "../**/*.njk";
+@source "../js/**/*.js";
+
+/* Classi composte nei template (`bg-${color}-500/15`, messaggi, sezioni delle
+   slide, classifica): non compaiono intere nei sorgenti, quindi si elencano qui. */
+@source inline("bg-{emerald,rose,amber,sky,slate,violet,orange}-500/{10,15,20,25}");
+@source inline("border-{emerald,rose,amber,sky,slate,violet,orange}-500/40");
+@source inline("text-{emerald,rose,amber,sky,slate,violet,orange}-{200,300,400}");
+
+/* La palette di Tailwind 3 (in esadecimale): Tailwind 4 è passato a valori
+   oklch leggermente diversi, e il sito deve restare identico. */
+@theme {
+  --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+  --color-slate-950: #020617;
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+  --color-gray-950: #030712;
+  --color-orange-50: #fff7ed;
+  --color-orange-100: #ffedd5;
+  --color-orange-200: #fed7aa;
+  --color-orange-300: #fdba74;
+  --color-orange-400: #fb923c;
+  --color-orange-500: #f97316;
+  --color-orange-600: #ea580c;
+  --color-orange-700: #c2410c;
+  --color-orange-800: #9a3412;
+  --color-orange-900: #7c2d12;
+  --color-orange-950: #431407;
+  --color-amber-50: #fffbeb;
+  --color-amber-100: #fef3c7;
+  --color-amber-200: #fde68a;
+  --color-amber-300: #fcd34d;
+  --color-amber-400: #fbbf24;
+  --color-amber-500: #f59e0b;
+  --color-amber-600: #d97706;
+  --color-amber-700: #b45309;
+  --color-amber-800: #92400e;
+  --color-amber-900: #78350f;
+  --color-amber-950: #451a03;
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-100: #d1fae5;
+  --color-emerald-200: #a7f3d0;
+  --color-emerald-300: #6ee7b7;
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
+  --color-emerald-800: #065f46;
+  --color-emerald-900: #064e3b;
+  --color-emerald-950: #022c22;
+  --color-sky-50: #f0f9ff;
+  --color-sky-100: #e0f2fe;
+  --color-sky-200: #bae6fd;
+  --color-sky-300: #7dd3fc;
+  --color-sky-400: #38bdf8;
+  --color-sky-500: #0ea5e9;
+  --color-sky-600: #0284c7;
+  --color-sky-700: #0369a1;
+  --color-sky-800: #075985;
+  --color-sky-900: #0c4a6e;
+  --color-sky-950: #082f49;
+  --color-violet-50: #f5f3ff;
+  --color-violet-100: #ede9fe;
+  --color-violet-200: #ddd6fe;
+  --color-violet-300: #c4b5fd;
+  --color-violet-400: #a78bfa;
+  --color-violet-500: #8b5cf6;
+  --color-violet-600: #7c3aed;
+  --color-violet-700: #6d28d9;
+  --color-violet-800: #5b21b6;
+  --color-violet-900: #4c1d95;
+  --color-violet-950: #2e1065;
+  --color-rose-50: #fff1f2;
+  --color-rose-100: #ffe4e6;
+  --color-rose-200: #fecdd3;
+  --color-rose-300: #fda4af;
+  --color-rose-400: #fb7185;
+  --color-rose-500: #f43f5e;
+  --color-rose-600: #e11d48;
+  --color-rose-700: #be123c;
+  --color-rose-800: #9f1239;
+  --color-rose-900: #881337;
+  --color-rose-950: #4c0519;
+}
+
+/* Comportamenti di Tailwind 3 che la versione 4 ha cambiato. */
+@layer base {
+  /* Bordo predefinito grigio chiaro invece di currentcolor. */
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+  /* Segnaposto grigio invece del colore del testo a metà opacità. */
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-gray-400);
+  }
+  /* Tailwind 4 azzera il padding di ogni elemento; il 3 lasciava quello
+     nativo di celle e opzioni. */
+  td,
+  th {
+    padding: 1px;
+  }
+  option {
+    padding: 0 2px 1px;
+  }
+  /* Il pulsante «Scegli file» nativo, che Tailwind 4 spoglia del tutto. */
+  ::file-selector-button {
+    all: revert;
+    -webkit-appearance: button;
+    appearance: button;
+    font: inherit;
+    line-height: inherit;
+  }
+  /* Puntatore sui pulsanti, come in Tailwind 3. */
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+[x-cloak] { display: none !important; }
+
+/* space-y e divide-y come in Tailwind 3. La versione 4 distanzia (o separa)
+   ogni figlio tranne l'ultimo; la 3 ogni figlio preceduto da un altro. Con i
+   <template> di Alpine fra i figli il risultato cambiava di qualche pixel: per
+   esempio la riga sotto l'intestazione delle tabelle spariva. */
+@layer utilities {
+  .space-y-1 > :not([hidden]) ~ :not([hidden]) { margin-top: calc(var(--spacing) * 1); margin-bottom: 0; }
+  :where(.space-y-1 > *) { margin-bottom: 0; }
+  .space-y-1\.5 > :not([hidden]) ~ :not([hidden]) { margin-top: calc(var(--spacing) * 1.5); margin-bottom: 0; }
+  :where(.space-y-1\.5 > *) { margin-bottom: 0; }
+  .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: calc(var(--spacing) * 2); margin-bottom: 0; }
+  :where(.space-y-2 > *) { margin-bottom: 0; }
+  .space-y-3 > :not([hidden]) ~ :not([hidden]) { margin-top: calc(var(--spacing) * 3); margin-bottom: 0; }
+  :where(.space-y-3 > *) { margin-bottom: 0; }
+  .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: calc(var(--spacing) * 4); margin-bottom: 0; }
+  :where(.space-y-4 > *) { margin-bottom: 0; }
+  :where(.divide-y > *) { border-bottom-width: 0; }
+  .divide-y > :not([hidden]) ~ :not([hidden]) { border-top-width: 1px; border-bottom-width: 0; }
+  .divide-slate-800 > :not([hidden]) ~ :not([hidden]) { border-color: var(--color-slate-800); }
+}
+
+
+/* In un layer, come in Tailwind 3: le utility (text-xs…) e prose vincono su
+   queste regole generiche. */
+@layer base {
+  /* Evidenziazione del codice sulle classi di highlight.js, sobria: si colorano solo
+     alcuni token (stringhe, numeri, parole chiave di dichiarazione, nomi di classi e
+     funzioni, annotazioni, tag); commenti, operatori, nomi e tipi restano nel colore
+     del testo intorno. */
+  pre { line-height: 125%; }
+  .hljs-keyword, .hljs-literal, .hljs-doctag { color: #66D9EF; }
+  .hljs-name, .hljs-selector-tag, .hljs-deletion { color: #FF4689; }
+  .hljs-string, .hljs-regexp, .hljs-symbol, .hljs-char.escape_, .hljs-template-tag { color: #E6DB74; }
+  .hljs-number { color: #AE81FF; }
+  .hljs-title.class_, .hljs-title.function_, .hljs-attr, .hljs-attribute, .hljs-meta,
+  .hljs-selector-class, .hljs-selector-id, .hljs-addition { color: #A6E22E; }
+  /* In SQL e HTTP le parole chiave restano testo semplice. */
+  .language-sql .hljs-keyword, .language-http .hljs-keyword { color: inherit; }
+  .hljs-emphasis { font-style: italic; }
+  .hljs-strong { font-weight: bold; }
+}
+
+/* Il banner dell'esito al reveal del torneo entra con un piccolo «pop». */
+@keyframes reveal-pop {
+  0% { transform: scale(0.92); opacity: 0; }
+  60% { transform: scale(1.03); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.reveal-pop { animation: reveal-pop 0.35s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .reveal-pop { animation: none; }
+}

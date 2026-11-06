@@ -1,0 +1,33 @@
+{
+  "version": "1.0",
+  "microcourse": {
+    "course_slug": "xss",
+    "course_title": "Cross-Site Scripting (XSS)",
+    "course_icon": "🧨",
+    "slug": "base",
+    "title": "XSS · Base",
+    "summary": "Bundle di prova per i test del Worker.",
+    "is_published": true,
+    "order": 1,
+    "difficulty": 1,
+    "estimated_minutes": 5
+  },
+  "images": [],
+  "slides": [
+    { "order": 1, "section": "ATTACK", "title": "L'attacco", "body_markdown": "Un input mostrato nella pagina **senza encoding** può eseguire script." },
+    { "order": 2, "section": "DEFENSE", "title": "La difesa", "body_markdown": "Fai l'encoding dell'output in base al contesto." }
+  ],
+  "quiz": {
+    "title": "Quiz: XSS · Base",
+    "questions": [
+      { "qtype": "TRUE_FALSE", "prompt": "Vero o Falso?", "explanation": "L'encoding dipende dal contesto.", "difficulty": 1,
+        "data": { "statement": "L'encoding dell'output va scelto in base al contesto.", "answer": true } },
+      { "qtype": "MULTIPLE_CHOICE", "prompt": "Quale API inserisce testo senza interpretarlo come HTML?", "explanation": "textContent non interpreta l'HTML.", "difficulty": 1,
+        "data": { "multiple": false, "options": [ { "id": "a", "text": "innerHTML" }, { "id": "b", "text": "textContent" }, { "id": "c", "text": "document.write" } ], "correct": ["b"] } },
+      { "qtype": "FIND_WRONG_LINE", "prompt": "Quale riga è vulnerabile?", "explanation": "La riga 2 usa innerHTML con l'input.", "difficulty": 2,
+        "data": { "language": "javascript", "code": "const q = new URLSearchParams(location.search).get('q');\nout.innerHTML = q;", "correct_lines": [2], "start_line": 1 } },
+      { "qtype": "CODE_COMPARISON", "prompt": "Quale versione è sicura?", "explanation": "La versione B usa textContent.", "difficulty": 2,
+        "data": { "language": "javascript", "snippet_a": "el.innerHTML = name;", "snippet_b": "el.textContent = name;", "correct": "b" } }
+    ]
+  }
+}

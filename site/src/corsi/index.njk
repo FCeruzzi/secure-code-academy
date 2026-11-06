@@ -1,0 +1,28 @@
+---
+layout: layouts/base.njk
+title: Corsi · Secure Code Academy
+---
+<div x-data="courseListPage" x-init="load()">
+<a href="/" class="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium hover:bg-slate-800 transition mb-6">← Indietro</a>
+<h1 class="text-3xl font-bold mb-6">📚 Tutti i corsi</h1>
+
+<template x-if="state === 'loading'"><div class="py-10 text-center text-sm text-slate-500">Caricamento…</div></template>
+<template x-if="state === 'error'"><div class="rounded-2xl border border-dashed border-rose-500/40 p-10 text-center text-rose-300" x-text="error"></div></template>
+<template x-if="state === 'ready' && courses.length">
+  <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+    <template x-for="course in courses" :key="course.slug">
+      <a :href="url('corso/', { c: course.slug })"
+         class="group rounded-2xl border border-slate-800 bg-slate-900/50 p-5 hover:border-emerald-500/50 hover:bg-slate-900 transition">
+        <div class="text-3xl" x-text="course.icon || '🧩'"></div>
+        <h3 class="mt-3 font-semibold text-lg group-hover:text-emerald-400 transition" x-text="course.title"></h3>
+        <p class="mt-1 text-sm text-slate-400 line-clamp-3" x-text="course.description"></p>
+      </a>
+    </template>
+  </div>
+</template>
+<template x-if="state === 'ready' && !courses.length">
+  <div class="rounded-2xl border border-dashed border-slate-800 p-10 text-center text-slate-500">
+    Nessun corso pubblicato.
+  </div>
+</template>
+</div>

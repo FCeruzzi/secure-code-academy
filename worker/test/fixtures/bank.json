@@ -1,0 +1,18 @@
+{
+  "version": "1.0",
+  "kind": "questions",
+  "questions": [
+    { "qtype": "TRUE_FALSE", "prompt": "Vero o Falso?", "explanation": "Lo stored procedure non basta se concatena.", "course_slug": "sql-injection", "difficulty": 2,
+      "data": { "statement": "Una stored procedure che concatena l'input è comunque vulnerabile.", "answer": true } },
+    { "qtype": "MULTIPLE_CHOICE", "prompt": "Quale clausola non si può parametrizzare?", "explanation": "I nomi di colonna vanno validati con una whitelist.", "course_slug": "sql-injection", "difficulty": 3,
+      "data": { "multiple": false, "options": [ { "id": "a", "text": "WHERE id = ?" }, { "id": "b", "text": "ORDER BY <colonna>" } ], "correct": ["b"] } },
+    { "qtype": "CODE_COMPARISON", "prompt": "Quale versione è sicura?", "explanation": "La B usa i parametri.", "course_slug": "sql-injection", "difficulty": 2,
+      "data": { "language": "python", "snippet_a": "db.execute(f\"DELETE FROM t WHERE id = {id}\")", "snippet_b": "db.execute(\"DELETE FROM t WHERE id = ?\", (id,))", "correct": "b" } },
+    { "qtype": "TRUE_FALSE", "prompt": "Vero o Falso?", "explanation": "Il cookie HttpOnly non è leggibile da JavaScript.", "course_slug": "xss", "difficulty": 1,
+      "data": { "statement": "Un cookie HttpOnly non è leggibile da document.cookie.", "answer": true } },
+    { "qtype": "FIND_WRONG_LINE", "prompt": "Quale riga è vulnerabile?", "explanation": "La riga 1 scrive HTML non fidato.", "course_slug": "xss", "difficulty": 2,
+      "data": { "language": "javascript", "code": "document.write(location.hash);\\nconsole.log('ok');", "correct_lines": [1], "start_line": 1 } },
+    { "qtype": "TRUE_FALSE", "prompt": "Vero o Falso?", "explanation": "La CSP è una difesa in profondità.", "course_slug": "xss", "difficulty": 2,
+      "data": { "statement": "Una Content Security Policy rende inutile l'encoding dell'output.", "answer": false } }
+  ]
+}

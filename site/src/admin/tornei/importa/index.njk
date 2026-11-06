@@ -1,0 +1,32 @@
+---
+layout: layouts/admin.njk
+title: Importa torneo · Pannello
+navActive: tornei
+---
+<div x-data="adminTournamentImport">
+<div class="flex items-center justify-between gap-4 mb-6"><h1 class="text-2xl font-bold">📥 Importa torneo (JSON)</h1></div>
+<div class="max-w-2xl">
+  <nav class="text-sm text-slate-400 mb-4"><a href="/admin/tornei/" class="hover:text-slate-200">← Tornei</a></nav>
+  <p class="text-sm text-slate-400 mb-4">Scegli un file scaricato con <strong>💾 Esporta (JSON)</strong> dalla pagina «Gestisci» di un torneo, anche da un'altra installazione del sito. Nasce un <strong>torneo nuovo</strong>, già chiuso, con partecipanti, classifica, domande e report del file, e con un link nuovo. Il torneo da cui viene il file, se c'è ancora, non cambia. Un torneo mai giocato torna in bozza, con le sole impostazioni.</p>
+
+  <div class="mb-4">
+    <label for="f-file" class="block text-sm font-medium mb-1 text-slate-300">File JSON del torneo <span class="text-rose-400">*</span></label>
+    <input id="f-file" type="file" accept="application/json,.json" x-ref="file" @change="loadFile()"
+           class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden font-[inherit]">
+    <template x-if="fileError"><p class="text-xs text-rose-400 mt-1" x-text="fileError"></p></template>
+  </div>
+
+  <template x-if="info">
+  <form @submit.prevent="submit()" class="mb-8">
+    <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-4 mb-4 text-sm space-y-1">
+      <div class="font-semibold text-base" x-text="`🏆 ${info.title}`"></div>
+      <div class="text-slate-400" x-show="info.when" x-text="`Giocato il ${info.when}`"></div>
+      <div class="text-slate-300" x-text="`${info.participants} partecipanti · ${info.questions} domande · ${info.rounds} round`"></div>
+      <div class="text-xs text-slate-500" x-show="info.source" x-text="`Esportato da ${info.source}`"></div>
+    </div>
+    <button type="submit" :disabled="busy" class="rounded-lg bg-emerald-500 px-5 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-60" x-text="busy ? 'Importazione…' : '⬆ Importa il torneo'"></button>
+    <a href="/admin/tornei/" class="ml-2 rounded-lg border border-slate-700 px-5 py-2.5 hover:bg-slate-800 transition">Annulla</a>
+  </form>
+  </template>
+</div>
+</div>

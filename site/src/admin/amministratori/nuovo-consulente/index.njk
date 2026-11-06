@@ -1,0 +1,28 @@
+---
+layout: layouts/admin.njk
+title: Nuovo consulente · Pannello
+navActive: amministratori
+---
+{% import "forms.njk" as f %}
+<div x-data="adminConsultantCreate">
+<div class="flex items-center justify-between gap-4 mb-6"><h1 class="text-2xl font-bold">Nuovo consulente</h1></div>
+{% include "admin/temp-password.njk" %}
+<template x-if="issued">
+  <a href="/admin/amministratori/" class="inline-block rounded-lg border border-slate-700 px-5 py-2.5 hover:bg-slate-800 transition">← Torna agli amministratori</a>
+</template>
+<template x-if="!issued">
+<form @submit.prevent="submit()" class="max-w-2xl">
+  <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-5 mb-5 text-sm text-slate-300">
+    Il consulente lavora solo sui contenuti: corsi, microcorsi, slide, banca domande e quiz. Non vede
+    tornei, account e registro, e non può eliminare un corso intero né svuotare la banca. Riceve una
+    password temporanea casuale, valida 24 ore e mostrata una sola volta.
+  </div>
+  {{ f.input("username", "Username", required=true, help="Da 3 a 30 caratteri: lettere minuscole, cifre, punto, trattino e trattino basso.", attrs='autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="30"') }}
+  {{ f.input("confirm_password", "La tua password", type="password", required=true, help="Per confermare l'operazione.", attrs='autocomplete="current-password"') }}
+  <div class="flex gap-3 mt-6">
+    <button type="submit" :disabled="busy" class="rounded-lg bg-emerald-500 px-5 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-60">Crea il consulente</button>
+    <a href="/admin/amministratori/" class="rounded-lg border border-slate-700 px-5 py-2.5 hover:bg-slate-800 transition">Annulla</a>
+  </div>
+</form>
+</template>
+</div>

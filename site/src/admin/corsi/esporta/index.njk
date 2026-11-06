@@ -1,0 +1,42 @@
+---
+layout: layouts/admin.njk
+title: Esporta corsi · Pannello
+navActive: corsi
+---
+<div x-data="adminCourseExport">
+<div class="flex items-center justify-between gap-4 mb-6"><h1 class="text-2xl font-bold">Esporta corsi (JSON)</h1></div>
+<nav class="text-sm text-slate-400 mb-4"><a href="/admin/corsi/" class="hover:text-slate-200">← Corsi</a></nav>
+{% include "partials/loading.njk" %}
+<template x-if="state === 'ready'">
+<div class="max-w-3xl">
+  <p class="text-sm text-slate-400 mb-4">Scegli i corsi e i microcorsi da mettere nel file. Ogni corso porta con sé laboratorio, presentazioni e risorse; ogni microcorso slide, immagini e quiz.</p>
+  <div class="flex flex-wrap items-center gap-2 mb-3 text-sm">
+    <span class="text-slate-300" x-text="`${chosenCourses} corsi, ${chosenMcs} microcorsi selezionati`"></span>
+    <button type="button" @click="setAll(true)" class="rounded-md border border-slate-700 px-2.5 py-1 text-xs hover:bg-slate-800">Seleziona tutto</button>
+    <button type="button" @click="setAll(false)" class="rounded-md border border-slate-700 px-2.5 py-1 text-xs hover:bg-slate-800">Nessuno</button>
+  </div>
+  <div class="rounded-xl border border-slate-800 divide-y divide-slate-800 mb-6">
+    <template x-for="node in tree" :key="node.course.id">
+      <div class="p-3">
+        <label class="flex items-center gap-3 font-medium">
+          <input type="checkbox" :checked="node.checked" @change="toggleCourse(node, $event.target.checked)" class="h-4 w-4 accent-emerald-500">
+          <span x-text="`${node.course.icon || '📘'} ${node.course.title}`"></span>
+          <span class="text-xs text-slate-500" x-text="node.course.slug"></span>
+        </label>
+        <div class="mt-2 ml-7 space-y-1" x-show="node.mcs.length">
+          <template x-for="m in node.mcs" :key="m.mc.id">
+            <label class="flex items-center gap-2 text-sm text-slate-300">
+              <input type="checkbox" x-model="m.checked" @change="if (m.checked) node.checked = true" class="h-4 w-4 accent-emerald-500">
+              <span x-text="m.mc.title"></span>
+              <span class="text-xs text-slate-500" x-text="`${m.mc.slide_count} slide · ${m.mc.question_count} domande`"></span>
+            </label>
+          </template>
+        </div>
+      </div>
+    </template>
+  </div>
+  <button type="button" @click="exportChosen()" :disabled="busy || !chosenCourses" class="rounded-lg bg-emerald-500 px-5 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-60">⬇ Esporta</button>
+  <span x-show="progress" class="ml-3 text-sm text-slate-400" x-text="progress"></span>
+</div>
+</template>
+</div>

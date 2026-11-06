@@ -1,0 +1,43 @@
+---
+layout: layouts/base.njk
+title: Slide · Secure Code Academy
+---
+<div x-data="slidePage" x-init="load()">
+{% include "partials/loading.njk" %}
+<template x-if="state === 'ready'">
+<div class="max-w-3xl mx-auto">
+  <a :href="url('corso/', { c: course.slug })" class="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium hover:bg-slate-800 transition mb-4">← Indietro al corso</a>
+
+  <div class="h-1.5 w-full rounded-full bg-slate-800 mb-6 overflow-hidden">
+    <div class="h-full bg-emerald-500 transition-all" :style="`width: ${widthPct(position, total)}%`"></div>
+  </div>
+
+  <div class="flex items-center gap-3 mb-4">
+    <span class="inline-flex items-center rounded-md px-2.5 py-1 text-xs font-semibold uppercase tracking-wide"
+          :class="`bg-${sectionColor(slide.section)}-500/15 text-${sectionColor(slide.section)}-300`" x-text="sectionLabel(slide.section)"></span>
+    <span class="text-xs text-slate-500" x-text="`Slide ${position} di ${total}`"></span>
+  </div>
+
+  <template x-if="slide.title"><h1 class="text-3xl font-bold mb-6" x-text="slide.title"></h1></template>
+
+  <article class="prose prose-invert prose-slate max-w-none prose-pre:bg-slate-900 prose-pre:border prose-pre:border-slate-800 prose-code:text-emerald-300 prose-headings:scroll-mt-20" x-html="slide.body_html"></article>
+
+  <div class="mt-10 flex items-center justify-between border-t border-slate-800 pt-6">
+    <template x-if="position > 1">
+      <a :href="slideUrl(position - 1)" class="rounded-lg border border-slate-700 px-4 py-2 text-sm hover:bg-slate-800 transition">← Precedente</a>
+    </template>
+    <template x-if="position <= 1"><span></span></template>
+
+    <template x-if="position < total">
+      <a :href="slideUrl(position + 1)" class="rounded-lg bg-emerald-500 px-5 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400 transition">Successiva →</a>
+    </template>
+    <template x-if="position >= total && hasQuiz">
+      <a :href="url('quiz/', { m: mc.id })" class="rounded-lg bg-violet-500 px-5 py-2 text-sm font-semibold text-slate-950 hover:bg-violet-400 transition">Vai al quiz 🧠</a>
+    </template>
+    <template x-if="position >= total && !hasQuiz">
+      <a :href="url('corso/', { c: course.slug })" class="rounded-lg bg-slate-700 px-5 py-2 text-sm font-semibold hover:bg-slate-600 transition">Fine ✓</a>
+    </template>
+  </div>
+</div>
+</template>
+</div>
