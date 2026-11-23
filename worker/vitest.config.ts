@@ -20,6 +20,10 @@ export default defineConfig(async () => {
     ],
     test: {
       setupFiles: ["./test/apply-migrations.ts"],
+      // Sui runner di GitHub ogni richiesta al Worker simulato costa ~150 ms: i test che fanno
+      // decine di iscrizioni o risposte di fila superano i 5 s predefiniti. Il comportamento lo
+      // verificano le asserzioni, non il tempo.
+      testTimeout: 30_000,
     },
   };
 });
