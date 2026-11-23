@@ -112,19 +112,34 @@ function codeBlock(content: string, info: string): string {
 md.renderer.rules.fence = (tokens, idx) => codeBlock(tokens[idx].content, tokens[idx].info);
 md.renderer.rules.code_block = (tokens, idx) => codeBlock(tokens[idx].content, "");
 
+// Un'immagine senza testo alternativo nel Markdown («![](img:schema)») prende quello
+// salvato con l'immagine del microcorso: chi usa un lettore di schermo sente cosa mostra.
+md.renderer.rules.image = (tokens, idx, options, env, self) => {
+  const token = tokens[idx];
+  const own = self.renderInlineAsText(token.children || [], options, env).trim();
+  const alts = (env as { alts?: Record<string, string> } | undefined)?.alts || {};
+  token.attrSet("alt", own || alts[token.attrGet("src") || ""] || "");
+  return self.renderToken(tokens, idx, options);
+};
+
+export type SlideImage = string | { url: string; alt?: string | null };
+
 /**
- * Markdown → HTML. `images` è la mappa `{ref_key: url}` di un microcorso: ogni
- * `img:<ref_key>` del sorgente viene sostituito con il link reale prima del
- * parsing.
+ * Markdown → HTML. `images` è la mappa `{ref_key: url}` (o `{ref_key: {url, alt}}`) di un
+ * microcorso: ogni `img:<ref_key>` del sorgente viene sostituito con il link reale prima
+ * del parsing, e il testo alternativo salvato fa da riserva per le immagini senza.
  */
-export function renderMarkdown(text: string | null | undefined, images?: Record<string, string>): string {
+export function renderMarkdown(text: string | null | undefined, images?: Record<string, SlideImage>): string {
   let src = text || "";
+  const alts: Record<string, string> = {};
   if (images) {
-    for (const [refKey, url] of Object.entries(images)) {
+    for (const [refKey, image] of Object.entries(images)) {
+      const url = typeof image === "string" ? image : image.url;
+      if (typeof image !== "string" && image.alt) alts[url] = image.alt;
       src = src.split(`img:${refKey}`).join(url);
     }
   }
-  return md.render(src);
+  return md.render(src, { alts });
 }
 
 /** Un unico blocco di codice evidenziato (span dei token, senza wrapper). */

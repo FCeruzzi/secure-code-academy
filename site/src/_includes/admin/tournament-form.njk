@@ -20,9 +20,9 @@
           <template x-for="c in allCourses" :key="c.id">
             <label class="flex items-center gap-2 text-sm text-slate-200"><input type="checkbox" :value="String(c.id)" x-model="form.courses" class="h-4 w-4 rounded-sm border-slate-600 bg-slate-900 accent-emerald-500"> <span x-text="c.title"></span></label>
           </template>
-          <template x-if="!allCourses.length"><p class="text-sm text-slate-500">Nessun corso disponibile. Crea prima dei corsi.</p></template>
+          <template x-if="!allCourses.length"><p class="text-sm text-slate-400">Nessun corso disponibile. Crea prima dei corsi.</p></template>
         </div>
-        <p class="text-xs text-slate-500 mt-1">Le domande vengono estratte casualmente dalla banca dei corsi selezionati. Quelle usate nei quiz dei microcorsi sono escluse: il quiz pubblico ne mostra la soluzione.</p>
+        <p class="text-xs text-slate-400 mt-1">Le domande vengono estratte casualmente dalla banca dei corsi selezionati. Quelle usate nei quiz dei microcorsi sono escluse: il quiz pubblico ne mostra la soluzione.</p>
       </div>
     </template>
     {{ f.errorsOf("courses") }}
@@ -30,19 +30,19 @@
     <template x-if="mode === 'pick'">
       <div class="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
         <div class="grid sm:grid-cols-4 gap-2 mb-2">
-          <select x-model="bankFilter.course" class="rounded-lg bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100">
+          <select x-model="bankFilter.course" class="rounded-lg bg-slate-900 border border-slate-500 px-2 py-1.5 text-sm text-slate-100">
             <option value="">Tutti i corsi</option>
             <template x-for="c in allCourses" :key="c.id"><option :value="String(c.id)" x-text="c.title"></option></template>
           </select>
-          <select x-model="bankFilter.qtype" class="rounded-lg bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100">
+          <select x-model="bankFilter.qtype" class="rounded-lg bg-slate-900 border border-slate-500 px-2 py-1.5 text-sm text-slate-100">
             <option value="">Tutti i tipi</option>
             <template x-for="[k, label] in qtypes" :key="k"><option :value="k" x-text="label"></option></template>
           </select>
-          <select x-model="bankFilter.difficulty" class="rounded-lg bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100">
+          <select x-model="bankFilter.difficulty" class="rounded-lg bg-slate-900 border border-slate-500 px-2 py-1.5 text-sm text-slate-100">
             <option value="">Ogni difficoltà</option>
             <option value="1">Base</option><option value="2">Intermedio</option><option value="3">Avanzato</option>
           </select>
-          <input type="search" x-model="bankFilter.q" placeholder="Cerca nel testo…" class="rounded-lg bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100">
+          <input type="search" x-model="bankFilter.q" placeholder="Cerca nel testo…" class="rounded-lg bg-slate-900 border border-slate-500 px-2 py-1.5 text-sm text-slate-100">
         </div>
         <div class="flex flex-wrap items-center gap-3 text-xs mb-2">
           <span class="text-slate-400"><strong class="text-slate-200" x-text="form.question_ids.length"></strong> scelte · <span x-text="filteredBank.length"></span> mostrate</span>
@@ -50,20 +50,20 @@
           <button type="button" @click="pickFiltered(false)" class="text-slate-300 hover:underline">Togli le mostrate</button>
           <button type="button" @click="form.question_ids = []" class="text-slate-400 hover:underline">Nessuna</button>
         </div>
-        <template x-if="bankState === 'loading'"><p class="text-sm text-slate-500">Caricamento della banca…</p></template>
+        <template x-if="bankState === 'loading'"><p class="text-sm text-slate-400">Caricamento della banca…</p></template>
         <div class="max-h-96 overflow-y-auto rounded-lg border border-slate-800 divide-y divide-slate-800">
           <template x-for="q in filteredBank" :key="q.id">
             <label class="flex items-start gap-2 px-3 py-2 text-sm hover:bg-slate-800/40 cursor-pointer">
               <input type="checkbox" :value="q.id" x-model.number="form.question_ids" class="mt-0.5 h-4 w-4 rounded-sm border-slate-600 bg-slate-900 accent-emerald-500">
               <span class="min-w-0 flex-1">
                 <span class="block truncate text-slate-200" :title="q.summary || q.prompt" x-text="q.summary || q.prompt"></span>
-                <span class="text-xs text-slate-500"><span x-text="qtypeLabel(q.qtype)"></span> · <span x-text="q.course_title || 'Senza corso'"></span> · <span x-text="difficultyLabel(q.difficulty)"></span></span>
+                <span class="text-xs text-slate-400"><span x-text="qtypeLabel(q.qtype)"></span> · <span x-text="q.course_title || 'Senza corso'"></span> · <span x-text="difficultyLabel(q.difficulty)"></span></span>
               </span>
             </label>
           </template>
-          <template x-if="bankState === 'ready' && !filteredBank.length"><p class="px-3 py-2 text-sm text-slate-500">Nessuna domanda con questi filtri.</p></template>
+          <template x-if="bankState === 'ready' && !filteredBank.length"><p class="px-3 py-2 text-sm text-slate-400">Nessuna domanda con questi filtri.</p></template>
         </div>
-        <p class="text-xs text-slate-500 mt-1">Solo domande attive e fuori dai quiz dei microcorsi: il quiz pubblico ne mostra la soluzione.</p>
+        <p class="text-xs text-slate-400 mt-1">Solo domande attive e fuori dai quiz dei microcorsi: il quiz pubblico ne mostra la soluzione.</p>
       </div>
     </template>
     {{ f.errorsOf("question_ids") }}

@@ -1,21 +1,23 @@
-{#- Input per tipo di domanda, nello scope Alpine: q (la domanda), sel (la
-    selezione), changed() (chiamata a ogni modifica). `variant` = 'quiz' (colori
-    del quiz dei microcorsi, campi obbligatori) oppure 'tournament' (selezione in
-    blu neutro, che non deve suggerire la correttezza; la scelta multipla si
-    conferma con confirmChoice() e poi resta bloccata: `locked`). #}
+{#- Input per tipo di domanda, nello scope Alpine: q (la domanda), sel (la selezione),
+    changed() (chiamata a ogni modifica), pickLine/pickedLine/pickedFile/inBlock (la riga
+    errata, a blocchi). `variant` = 'quiz' (colori del quiz dei microcorsi) oppure
+    'tournament' (selezione in blu neutro, che non deve suggerire la correttezza; dopo
+    «Conferma risposta» la scelta resta quella: `locked`). Il pulsante di conferma sta
+    sotto, nella pagina: in basso a sinistra, per ogni tipo. #}
 <template x-if="q?.qtype === 'TRUE_FALSE'">
   <div>
     <div class="prose prose-invert max-w-none mb-4 text-slate-300" x-html="q?.statement_html"></div>
-    <div class="grid grid-cols-2 gap-3">
+    <fieldset class="grid grid-cols-2 gap-3">
+      <legend class="sr-only">L'affermazione è vera o falsa?</legend>
       <label class="cursor-pointer">
-        <input type="radio" name="answer" value="true" x-model="sel.answer" @change="changed()" class="peer sr-only" required>
-        <div class="rounded-xl border border-slate-700 p-4 text-center font-semibold {% if variant == 'quiz' %}peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10{% else %}peer-checked:border-sky-500 peer-checked:bg-sky-500/10{% endif %} hover:border-slate-600 transition">✔ Vero</div>
+        <input type="radio" name="answer" value="true" x-model="sel.answer" @change="changed()" {% if variant == 'tournament' %}:disabled="locked" {% endif %}class="peer sr-only">
+        <div class="choice-card flex items-center justify-center rounded-xl border border-slate-700 p-4 text-center font-semibold {% if variant == 'quiz' %}peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10{% else %}peer-checked:border-sky-500 peer-checked:bg-sky-500/10{% endif %} hover:border-slate-600 transition"><span aria-hidden="true">✔</span> Vero<span class="choice-tick ml-1.5 h-5 w-5 items-center justify-center rounded-full bg-sky-500 text-xs font-bold text-slate-950" aria-hidden="true">✓</span></div>
       </label>
       <label class="cursor-pointer">
-        <input type="radio" name="answer" value="false" x-model="sel.answer" @change="changed()" class="peer sr-only" required>
-        <div class="rounded-xl border border-slate-700 p-4 text-center font-semibold {% if variant == 'quiz' %}peer-checked:border-rose-500 peer-checked:bg-rose-500/10{% else %}peer-checked:border-sky-500 peer-checked:bg-sky-500/10{% endif %} hover:border-slate-600 transition">✘ Falso</div>
+        <input type="radio" name="answer" value="false" x-model="sel.answer" @change="changed()" {% if variant == 'tournament' %}:disabled="locked" {% endif %}class="peer sr-only">
+        <div class="choice-card flex items-center justify-center rounded-xl border border-slate-700 p-4 text-center font-semibold {% if variant == 'quiz' %}peer-checked:border-rose-500 peer-checked:bg-rose-500/10{% else %}peer-checked:border-sky-500 peer-checked:bg-sky-500/10{% endif %} hover:border-slate-600 transition"><span aria-hidden="true">✘</span> Falso<span class="choice-tick ml-1.5 h-5 w-5 items-center justify-center rounded-full bg-sky-500 text-xs font-bold text-slate-950" aria-hidden="true">✓</span></div>
       </label>
-    </div>
+    </fieldset>
   </div>
 </template>
 
@@ -24,7 +26,8 @@
     <template x-if="q?.multiple">
       <p class="mb-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">☑️ <strong>Più risposte possono essere corrette</strong>: seleziona tutte quelle giuste.</p>
     </template>
-    <div class="space-y-2">
+    <fieldset class="space-y-2">
+      <legend class="sr-only" x-text="q?.multiple ? 'Scegli tutte le risposte giuste' : 'Scegli una risposta'"></legend>
       {#- La lettera è la posizione mostrata (A, B, C… dall'alto); il valore inviato è
           l'id dell'opzione, ed è su quello che il server corregge. #}
       <template x-for="(opt, i) in (q?.options || [])" :key="opt.id">
@@ -35,63 +38,68 @@
           <template x-if="!q?.multiple">
             <input type="radio" name="selected" :value="opt.id" :checked="sel.selected[0] === opt.id" @change="sel.selected = [opt.id]; changed()" {% if variant == 'tournament' %}:disabled="locked" {% endif %}class="peer sr-only">
           </template>
-          <div class="rounded-xl border border-slate-700 p-3 flex items-center gap-3 {% if variant == 'quiz' %}peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10{% else %}peer-checked:border-sky-500 peer-checked:bg-sky-500/10{% endif %} hover:border-slate-600 transition">
-            <span class="font-mono text-xs uppercase text-slate-500" x-text="'ABCDEFGHIJKLMNOP'[i]"></span>
-            <span x-text="opt.text"></span>
+          <div class="choice-card rounded-xl border border-slate-700 p-3 flex items-center gap-3 {% if variant == 'quiz' %}peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10{% else %}peer-checked:border-sky-500 peer-checked:bg-sky-500/10{% endif %} hover:border-slate-600 transition">
+            <span class="font-mono text-xs uppercase text-slate-400" x-text="'ABCDEFGHIJKLMNOP'[i]"></span>
+            <span class="flex-1" x-text="opt.text"></span>
+            <span class="choice-tick ml-1.5 h-5 w-5 items-center justify-center rounded-full bg-sky-500 text-xs font-bold text-slate-950" aria-hidden="true">✓</span>
           </div>
         </label>
       </template>
-    </div>
-    {% if variant == 'tournament' %}
-    <div class="mt-4 flex flex-wrap items-center gap-3">
-      <button type="button" @click="confirmChoice()" x-show="!locked" :disabled="busy || !sel.selected.length"
-        class="rounded-lg bg-sky-500 px-5 py-2.5 font-semibold text-slate-950 hover:bg-sky-400 transition disabled:opacity-50">✔ Conferma risposta</button>
-      <span x-show="!locked" class="text-xs text-slate-500">La risposta conta solo dopo la conferma, e poi non si può più cambiare.</span>
-      <span x-show="locked" x-cloak class="text-sm text-sky-300">✓ Risposta confermata — in attesa degli altri…</span>
-    </div>
-    {% endif %}
+    </fieldset>
   </div>
 </template>
 
 <template x-if="q?.qtype === 'FIND_WRONG_LINE'">
-  {#- Un progetto mostra i file in un menu a lato, come il confronto; un blocco di
-      codice solo il codice. La selezione è un elenco di chiavi "file:riga". #}
-  <div x-data="{ f: 0 }" x-init="$watch('q', () => (f = 0))">
-    <div class="flex overflow-hidden rounded-xl border border-slate-800 bg-slate-950">
-      <template x-if="q?.is_project">
-        <div class="w-44 shrink-0 border-r border-slate-800 bg-slate-950/70 py-1 h-[calc(100vh-25rem)] min-h-72 overflow-y-auto">
+  {#- Nello stile IDE di ogni vista del codice: barra con i tre pallini e il file aperto,
+      i file in un menu a lato (sempre: un blocco di codice è il file «codice») e il codice.
+      Ogni riga è un pulsante e un clic sceglie il suo blocco (line.block): il «{ … }» più
+      interno che la contiene, al massimo il metodo; fuori dai blocchi la sola riga. Il
+      blocco si colora per intervallo, così un metodo mostra anche il suo «if»; passando
+      col mouse si vede il blocco che il clic sceglierebbe. #}
+  <div x-data="{ f: 0, hov: '', cur: '',
+                 moveLine(el, step) { const all = [...el.closest('[data-lines]').querySelectorAll('button[data-key]')]; const next = all[all.indexOf(el) + step]; if (next) { this.cur = next.dataset.key; next.focus(); } } }"
+       x-init="$watch('q', () => { f = 0; hov = ''; cur = ''; })">
+    <div class="overflow-hidden rounded-xl border border-slate-700">
+      <div class="flex items-center gap-2 border-b border-slate-700 bg-slate-800/60 px-3 py-2 text-xs font-semibold">
+        <span class="flex gap-1" aria-hidden="true"><span class="h-2.5 w-2.5 rounded-full bg-rose-400/70"></span><span class="h-2.5 w-2.5 rounded-full bg-amber-400/70"></span><span class="h-2.5 w-2.5 rounded-full bg-emerald-400/70"></span></span>
+        <span class="truncate font-mono font-normal text-slate-300" x-text="(q?.code_files || [])[f]?.name"></span>
+      </div>
+      <div class="flex h-[calc(100vh-25rem)] min-h-[18rem]">
+        <div class="w-36 shrink-0 overflow-y-auto border-r border-slate-800 bg-slate-950/70 py-1">
           <template x-for="file in (q?.code_files || [])" :key="file.index">
-            <button type="button" @click="f = file.index" :title="file.name"
+            <button type="button" @click="f = file.index" :title="file.name" :aria-current="f === file.index ? 'true' : null"
               :class="f === file.index ? 'bg-slate-800 text-emerald-300' : 'text-slate-400 hover:bg-slate-800/50'"
               class="flex w-full items-center gap-1.5 px-2.5 py-1 text-left font-mono text-xs">
-              <span class="text-slate-600">📄</span><span class="truncate flex-1" x-text="file.name"></span>
-              <span x-show="sel.lines.some((k) => k.startsWith(file.index + ':'))" class="h-2 w-2 shrink-0 rounded-full bg-sky-400"></span>
+              <span class="text-slate-400" aria-hidden="true">📄</span><span class="truncate flex-1" x-text="file.name"></span>
+              <span x-show="pickedFile(file.index)" class="h-2 w-2 shrink-0 rounded-full {% if variant == 'quiz' %}bg-rose-400{% else %}bg-sky-400{% endif %}" aria-hidden="true"></span>
+              <span x-show="pickedFile(file.index)" class="sr-only">(scelta fatta qui)</span>
             </button>
           </template>
         </div>
-      </template>
-      <div class="min-w-0 flex-1 h-[calc(100vh-25rem)] min-h-72 overflow-y-auto text-sm leading-6">
-        <template x-for="file in (q?.code_files || [])" :key="file.index">
-          <div x-show="f === file.index">
-            <template x-if="q?.is_project">
-              <div class="sticky top-0 z-10 border-b border-slate-800 bg-slate-900/95 px-3 py-1 font-mono text-xs text-slate-400" x-text="file.name"></div>
-            </template>
-            <template x-for="line in file.lines" :key="line.key">
-              <button type="button" @click="toggleLine(line.key)"
-                :class="sel.lines.includes(line.key) ? '{% if variant == 'quiz' %}bg-rose-500/25 ring-1 ring-rose-500/40{% else %}bg-sky-500/25 ring-1 ring-sky-500/40{% endif %}' : 'hover:bg-slate-800/60'"
-                class="w-full text-left flex gap-3 px-3 py-0.5 transition">
-                <span class="w-8 shrink-0 text-right text-slate-600 select-none" x-text="line.number"></span>
-                <span class="highlight whitespace-pre overflow-x-auto" x-html="line.html"></span>
-              </button>
-            </template>
-          </div>
-        </template>
+        <div class="min-w-0 flex-1 overflow-y-auto bg-slate-950 text-sm leading-6">
+          <template x-for="file in (q?.code_files || [])" :key="file.index">
+            <div x-show="f === file.index" data-lines role="group" :aria-label="`Righe di ${file.name}: frecce su e giù per muoversi, Invio per scegliere`">
+              <template x-for="(line, li) in file.lines" :key="line.key">
+                <button type="button" :data-key="line.key" :data-block="line.block" {% if variant == 'tournament' %}:disabled="locked" {% endif %}
+                  :tabindex="(cur ? cur === line.key : li === 0) ? 0 : -1" :aria-pressed="pickedLine(line.key)"
+                  @keydown.arrow-down.prevent="moveLine($el, 1)" @keydown.arrow-up.prevent="moveLine($el, -1)"
+                  @focus="cur = line.key; hov = line.block" @blur="hov = ''"
+                  @click="pickLine(line.key, line.block)" @mouseenter="hov = line.block" @mouseleave="hov = ''"
+                  :class="pickedLine(line.key) ? '{% if variant == 'quiz' %}bg-rose-500/25 border-rose-400{% else %}bg-sky-500/25 border-sky-400{% endif %}' : (inBlock(hov, line.key) ? 'bg-slate-800/70 border-slate-500' : 'border-transparent')"
+                  class="w-full text-left flex gap-3 border-l-2 border-transparent px-3 py-0.5 transition focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-sky-400">
+                  <span class="w-8 shrink-0 text-right text-slate-400 select-none"><span class="sr-only">Riga </span><span x-text="line.number"></span></span>
+                  <span class="highlight whitespace-pre overflow-x-auto" x-html="line.html"></span>
+                </button>
+              </template>
+            </div>
+          </template>
+        </div>
       </div>
     </div>
-    <p class="text-xs text-slate-500 mt-2">👆 <span x-text="q?.is_project ? 'Apri i file dal menu a lato e clicca' : 'Clicca'"></span> la riga vulnerabile/errata{% if variant == 'tournament' %} — puoi cambiare selezione fino allo scadere del tempo{% endif %}.</p>
+    <p class="text-xs text-slate-400 mt-2"><span aria-hidden="true">👆</span> <span x-text="q?.is_project ? 'Apri i file dal menu a lato e clicca' : 'Clicca'"></span> la riga vulnerabile/errata<span x-show="hasBlocks(q)">: si seleziona il blocco tra { e } che la contiene, al massimo il metodo (fuori dai blocchi, la sola riga). Un altro clic toglie la scelta</span><span x-show="q?.is_project"> (il pallino indica i file in cui hai scelto)</span>.</p>
   </div>
 </template>
 
 <template x-if="q?.qtype === 'CODE_COMPARISON'">
-  <div>{% include "partials/code-comparison-input.njk" %}</div>
+  <div class="flex flex-col" :class="full ? 'min-h-0 flex-1' : ''">{% include "partials/code-comparison-input.njk" %}</div>
 </template>

@@ -9,6 +9,9 @@ export interface Env {
   /** Secret: gli username autorizzati, separati da virgola. */
   ADMIN_USERNAMES: string;
   PBKDF2_ITERATIONS: string;
+  /** Limiti di richieste per indirizzo (wrangler.toml); assenti nei test, e allora non limitano. */
+  API_LIMIT?: RateLimit;
+  ACTION_LIMIT?: RateLimit;
 }
 
 export interface AdminUser {

@@ -23,7 +23,7 @@ navActive: corsi
           <template x-if="mc.is_published"><span class="ml-2 rounded-sm bg-emerald-500/15 text-emerald-300 px-2 py-0.5 text-xs">Pubblicato</span></template>
           <template x-if="!mc.is_published"><span class="ml-2 rounded-sm bg-slate-700 text-slate-300 px-2 py-0.5 text-xs">Bozza</span></template>
         </div>
-        <div class="text-xs text-slate-500" x-text="truncate(mc.summary, 80)"></div>
+        <div class="text-xs text-slate-400" x-text="truncate(mc.summary, 80)"></div>
       </div>
       <div class="flex gap-2 whitespace-nowrap">
         <button type="button" @click="exportMc(mc)" class="text-xs rounded-md border border-slate-700 px-3 py-1.5 hover:bg-slate-800">⬇ Esporta</button>
@@ -33,7 +33,7 @@ navActive: corsi
     </div>
   </template>
   <template x-if="!microcourses.length">
-    <div class="rounded-xl border border-dashed border-slate-800 p-8 text-center text-slate-500">Nessun microcorso in questo corso.</div>
+    <div class="rounded-xl border border-dashed border-slate-800 p-8 text-center text-slate-400">Nessun microcorso in questo corso.</div>
   </template>
 </div>
 </div>

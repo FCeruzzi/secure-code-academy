@@ -39,5 +39,20 @@ class_name = "PasswordHasher"
 tag = "v1"
 new_sqlite_classes = ["TournamentRoom", "PasswordHasher"]
 
+# Limiti di richieste per indirizzo, tenuti dal runtime di Cloudflare: fermano raffiche e
+# script prima che costino letture e scritture su D1 o richieste ai Durable Object. Sono
+# larghi apposta, perché in un ufficio molti giocatori escono dallo stesso indirizzo. Il
+# namespace_id è un numero scelto qui, unico nell'account.
+[[ratelimits]]
+name = "API_LIMIT"
+namespace_id = "51001"
+simple = { limit = 2400, period = 60 }
+
+# Iscrizioni ai tornei e login: pochi per indirizzo (le chiavi hanno prefissi diversi).
+[[ratelimits]]
+name = "ACTION_LIMIT"
+namespace_id = "51002"
+simple = { limit = 60, period = 60 }
+
 [observability]
 enabled = true

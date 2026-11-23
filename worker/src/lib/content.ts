@@ -43,12 +43,12 @@ function bundleUrl(v: unknown, label: string, { embed = false } = {}): string {
   }
 }
 
-export async function imagesMap(db: D1Database, mcId: number): Promise<Record<string, string>> {
+export async function imagesMap(db: D1Database, mcId: number): Promise<Record<string, { url: string; alt: string }>> {
   const { results } = await db
-    .prepare("SELECT ref_key, url FROM slide_images WHERE microcourse_id = ?")
+    .prepare("SELECT ref_key, url, alt_text FROM slide_images WHERE microcourse_id = ?")
     .bind(mcId)
-    .all<{ ref_key: string; url: string }>();
-  return Object.fromEntries(results.map((r) => [r.ref_key, r.url]));
+    .all<{ ref_key: string; url: string; alt_text: string | null }>();
+  return Object.fromEntries(results.map((r) => [r.ref_key, { url: r.url, alt: r.alt_text || "" }]));
 }
 
 /** Ri-renderizza tutte le slide di un microcorso (dopo un cambio di immagini). */

@@ -195,6 +195,8 @@ export const adminTournamentManage = () =>
     monitor: null,
     // PIN di iscrizione: c'è solo a iscrizioni aperte, e lo vede solo il pannello.
     pin: null,
+    // Tanti PIN sbagliati da reti diverse: qualcuno li sta provando.
+    pinAttack: false,
     copied: false,
     skew: 0,
     now: Date.now(),
@@ -208,14 +210,16 @@ export const adminTournamentManage = () =>
       await this.loadWith(() => this.reload(id));
       if (this.state !== "ready") return;
       setInterval(() => (this.now = Date.now()), 200);
-      // Monitor ogni 2 s, a iscrizioni aperte e durante la gara: aggiorna anche lo stato del torneo.
+      // Monitor ogni 2 s, a iscrizioni aperte e durante la gara: aggiorna anche lo stato del
+      // torneo. Con la scheda nascosta non chiede nulla (e la sessione può scadere da sola).
       const tick = async () => {
-        if (this.status === "RUNNING" || this.status === "OPEN") {
+        if ((this.status === "RUNNING" || this.status === "OPEN") && !document.hidden) {
           try {
             const m = await this.call(`/api/admin/tournaments/${this.t.id}/monitor`);
             if (this.status === "OPEN") {
               // A iscrizioni aperte gli iscritti compaiono subito, e chi non deve esserci si toglie.
               this.participants = m.participants;
+              this.pinAttack = Boolean(m.pin_attack);
               if (m.status !== "OPEN") await this.reload();
             } else {
               this.monitor = m;
@@ -238,6 +242,7 @@ export const adminTournamentManage = () =>
       this.items = data.items;
       this.plan = data.plan;
       this.pin = data.join_pin || null;
+      this.pinAttack = Boolean(data.pin_attack);
     },
     /** «2 Vero / Falso · 1 Scelta multipla · …» per un round. */
     get planText() {
@@ -317,6 +322,8 @@ export const adminTournamentManage = () =>
       return this.action(`/api/admin/tournaments/${this.t.id}/pin`, {
         then: (res) => {
           this.pin = res.pin;
+          // Il PIN nuovo azzera il conto dei tentativi sbagliati.
+          this.pinAttack = false;
           notify(res.message);
         },
       });

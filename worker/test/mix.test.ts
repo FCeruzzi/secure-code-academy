@@ -34,3 +34,15 @@ describe("mix dei tipi nei tornei", () => {
     expect(planRounds({}, null, 1, null).problems[0]).toContain("fuori dai quiz");
   });
 });
+
+describe("nameKey: lo stesso nome anche travestito", () => {
+  it("toglie maiuscole, accenti, spazi doppi e lettere di altri alfabeti uguali alle latine", async () => {
+    const { nameKey } = await import("../src/tournament/rules");
+    expect(nameKey("  Ada   Lovelace ")).toBe("ada lovelace");
+    expect(nameKey("Аda")).toBe(nameKey("Ada")); // А cirillica
+    expect(nameKey("Βob")).toBe(nameKey("Bob")); // Β greca
+    expect(nameKey("Adà")).toBe(nameKey("Ada"));
+    expect(nameKey("ＡＤＡ")).toBe(nameKey("ada")); // a larghezza piena
+    expect(nameKey("Anna")).not.toBe(nameKey("Anya"));
+  });
+});

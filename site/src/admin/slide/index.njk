@@ -16,7 +16,7 @@ navActive: corsi
     {{ f.input("title", "Titolo", attrs='maxlength="200"') }}
     <div class="mb-4">
       <label for="f-section" class="block text-sm font-medium mb-1 text-slate-300">Sezione <span class="text-rose-400">*</span></label>
-      <select id="f-section" x-model="form.section" required class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden font-[inherit]">
+      <select id="f-section" x-model="form.section" required class="w-full rounded-lg bg-slate-900 border border-slate-500 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden font-[inherit]">
         <template x-for="opt in sections" :key="opt[0]"><option :value="opt[0]" x-text="opt[1]" :selected="opt[0] === form.section"></option></template>
       </select>
       {{ f.errorsOf("section") }}
@@ -31,7 +31,7 @@ navActive: corsi
 
   <section class="rounded-xl border border-slate-800 bg-slate-900/40 p-5 h-fit">
     <h2 class="font-semibold mb-1">🖼️ Immagini</h2>
-    <p class="text-xs text-slate-500 mb-3">Incolla qui il link di un'immagine già pubblicata online e inseriscila nel testo con <code class="text-emerald-300">![alt](img:CHIAVE)</code>.</p>
+    <p class="text-xs text-slate-400 mb-3">Incolla qui il link di un'immagine già pubblicata online e inseriscila nel testo con <code class="text-emerald-300">![alt](img:CHIAVE)</code>.</p>
     <template x-if="slide">
       <div>
         <div class="space-y-2 mb-4">
@@ -40,35 +40,37 @@ navActive: corsi
               <div class="flex items-center gap-2 min-w-0">
                 <img :src="$safeUrl(im.url)" alt="" class="h-8 w-8 rounded-sm object-cover shrink-0">
                 <code class="text-xs text-emerald-300 truncate" x-text="'img:' + im.ref_key"></code>
+                <span x-show="!im.alt_text" class="shrink-0 rounded-sm bg-amber-500/15 px-1.5 py-0.5 text-[11px] text-amber-300"
+                      title="Chi usa un lettore di schermo non sa cosa mostra: aggiungi una descrizione nel Markdown o reinserisci l'immagine con il testo alternativo">⚠ senza testo alternativo</span>
               </div>
               <button type="button" @click="removeImage(im)" title="Elimina" aria-label="Elimina" class="inline-flex items-center rounded-sm border border-rose-700/50 text-rose-300 px-2 py-1.5 hover:bg-rose-500/10 shrink-0">{% include "partials/icon-trash.njk" %}</button>
             </div>
           </template>
-          <template x-if="!images.length"><p class="text-sm text-slate-500">Nessuna immagine.</p></template>
+          <template x-if="!images.length"><p class="text-sm text-slate-400">Nessuna immagine.</p></template>
         </div>
         <form @submit.prevent="addImage()" class="border-t border-slate-800 pt-4 space-y-2">
           <div class="mb-4">
-            <label class="block text-sm font-medium mb-1 text-slate-300">Chiave di riferimento <span class="text-rose-400">*</span></label>
-            <input type="text" x-model="img.ref_key" required maxlength="80" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden font-[inherit]">
-            <p class="text-xs text-slate-500 mt-1">Usala nel markdown così: ![descrizione](img:CHIAVE)</p>
+            <label for="f-img-ref-key" class="block text-sm font-medium mb-1 text-slate-300">Chiave di riferimento <span class="text-rose-400">*</span></label>
+            <input id="f-img-ref-key" type="text" x-model="img.ref_key" required maxlength="80" class="w-full rounded-lg bg-slate-900 border border-slate-500 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden font-[inherit]">
+            <p class="text-xs text-slate-400 mt-1">Usala nel markdown così: ![descrizione](img:CHIAVE)</p>
             <template x-for="e in (imgErrors.ref_key || [])"><p class="text-xs text-rose-400 mt-1" x-text="e"></p></template>
           </div>
           <div class="mb-4">
-            <label class="block text-sm font-medium mb-1 text-slate-300">Link all'immagine <span class="text-rose-400">*</span></label>
-            <input type="url" x-model="img.url" required maxlength="500" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden font-[inherit]">
-            <p class="text-xs text-slate-500 mt-1">Link diretto all'immagine già pubblicata online.</p>
+            <label for="f-img-url" class="block text-sm font-medium mb-1 text-slate-300">Link all'immagine <span class="text-rose-400">*</span></label>
+            <input id="f-img-url" type="url" x-model="img.url" required maxlength="500" class="w-full rounded-lg bg-slate-900 border border-slate-500 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden font-[inherit]">
+            <p class="text-xs text-slate-400 mt-1">Link diretto all'immagine già pubblicata online.</p>
             <template x-for="e in (imgErrors.url || [])"><p class="text-xs text-rose-400 mt-1" x-text="e"></p></template>
           </div>
           <div class="mb-4">
-            <label class="block text-sm font-medium mb-1 text-slate-300">Testo alternativo</label>
-            <input type="text" x-model="img.alt_text" maxlength="200" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden font-[inherit]">
+            <label for="f-img-alt-text" class="block text-sm font-medium mb-1 text-slate-300">Testo alternativo <span class="text-slate-400 font-normal">(descrive l'immagine a chi non la vede)</span></label>
+            <input id="f-img-alt-text" type="text" x-model="img.alt_text" maxlength="200" class="w-full rounded-lg bg-slate-900 border border-slate-500 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden font-[inherit]">
           </div>
           <button class="text-xs rounded-md bg-slate-800 px-3 py-1.5 hover:bg-slate-700">+ Aggiungi immagine</button>
         </form>
       </div>
     </template>
     <template x-if="!slide">
-      <p class="text-sm text-slate-500">Salva prima la slide per aggiungere e gestire le immagini.</p>
+      <p class="text-sm text-slate-400">Salva prima la slide per aggiungere e gestire le immagini.</p>
     </template>
   </section>
 </div>

@@ -19,29 +19,40 @@ title: Entra · Torneo
   <p class="text-center text-slate-400 mt-1" x-text="t.title"></p>
 
   <form @submit.prevent="join()" class="mt-8 rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
-    <template x-if="joinError"><div class="text-rose-300 text-sm mb-3" x-text="joinError"></div></template>
+    <template x-if="joinError"><div role="alert" class="text-rose-300 text-sm mb-3" x-text="joinError"></div></template>
 
-    <label for="join-pin" class="block text-sm font-medium mb-1 text-slate-300">PIN del torneo</label>
-    <input id="join-pin" type="text" name="pin" inputmode="numeric" autocomplete="off" maxlength="7" required
-           pattern="[0-9 ]{6,7}" x-model="form.pin" placeholder="000000"
-           class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 font-mono tracking-[0.3em] focus:border-emerald-500 outline-hidden">
-    <p class="mt-1 mb-5 text-xs text-slate-500">Sono 6 cifre: te le dà l'organizzatore, insieme al link.</p>
+    <label for="join-name" class="block text-sm font-medium mb-1 text-slate-300">Scegli un nome</label>
+    <input id="join-name" type="text" name="display_name" maxlength="40" required x-model="form.display_name" autocomplete="nickname"
+           class="w-full rounded-lg bg-slate-900 border border-slate-500 px-3 py-2 focus:border-emerald-500 outline-hidden">
 
-    <label class="block text-sm font-medium mb-1 text-slate-300">Scegli un nome</label>
-    <input type="text" name="display_name" maxlength="40" required x-model="form.display_name"
-           class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 focus:border-emerald-500 outline-hidden">
+    {# Il PIN sotto il nome, al centro: sono le cifre che l'organizzatore detta a tutti. #}
+    <div class="mt-5 text-center">
+      <label for="join-pin" class="block text-sm font-medium mb-1 text-slate-300">PIN del torneo</label>
+      <input id="join-pin" type="text" name="pin" inputmode="numeric" autocomplete="off" maxlength="7" required
+             pattern="[0-9 ]{6,7}" x-model="form.pin" placeholder="000000" aria-describedby="join-pin-help"
+             class="w-48 mx-auto block text-center rounded-lg bg-slate-900 border border-slate-500 px-3 py-2 font-mono tracking-[0.3em] focus:border-emerald-500 outline-hidden">
+      <p id="join-pin-help" class="mt-1 text-xs text-slate-400">Sono 6 cifre: te le dà l'organizzatore, insieme al link.</p>
+    </div>
 
-    <label class="block text-sm font-medium mt-5 mb-2 text-slate-300">Scegli un personaggio</label>
+    <fieldset>
+    <legend class="block text-sm font-medium mt-5 mb-2 text-slate-300">Scegli un personaggio</legend>
     <div class="grid grid-cols-6 gap-2">
       <template x-for="(a, i) in avatars" :key="a.key">
         <label class="cursor-pointer">
           <input type="radio" name="avatar" :value="a.key" x-model="form.avatar" class="peer sr-only" :required="i === 0">
-          <div class="aspect-square flex items-center justify-center text-2xl rounded-xl border border-slate-700 peer-checked:border-emerald-500 peer-checked:bg-emerald-500/15 hover:border-slate-500 transition" :title="a.label" x-text="a.emoji"></div>
+          <div class="choice-card relative aspect-square flex items-center justify-center text-2xl rounded-xl border border-slate-700 peer-checked:border-emerald-500 peer-checked:bg-emerald-500/15 hover:border-slate-500 transition" :title="a.label">
+            <span aria-hidden="true" x-text="a.emoji"></span><span class="sr-only" x-text="a.label"></span>
+            <span class="choice-tick absolute right-0.5 top-0.5 h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-slate-950" aria-hidden="true">✓</span>
+          </div>
         </label>
       </template>
     </div>
+    </fieldset>
 
-    <button type="submit" :disabled="busy" class="mt-6 w-full rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-60">Entra 🚀</button>
+    <button type="submit" :disabled="busy" aria-describedby="join-note" class="mt-6 w-full rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-60">Entra <span aria-hidden="true">🚀</span></button>
+    <p id="join-note" class="mt-4 text-xs text-slate-400">Il nome e il personaggio sono visibili agli altri partecipanti e in classifica: non serve il tuo nome vero.
+      Riservato ai maggiori di 18 anni. <a href="/privacy/" class="underline underline-offset-2 hover:text-slate-200">Come trattiamo i dati</a>;
+      puoi cancellarli quando vuoi con «Esci ed elimina i miei dati».</p>
   </form>
 </div>
 </template>

@@ -17,10 +17,10 @@ navActive: amministratori
 <form @submit.prevent="submit()" class="max-w-2xl">
   <div class="mb-4">
     <label for="f-username" class="block text-sm font-medium mb-1 text-slate-300">Username <span class="text-rose-400">*</span></label>
-    <select id="f-username" x-model="form.username" required class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden font-[inherit]">
+    <select id="f-username" x-model="form.username" required class="w-full rounded-lg bg-slate-900 border border-slate-500 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden font-[inherit]">
       <template x-for="u in available" :key="u"><option :value="u" x-text="u"></option></template>
     </select>
-    <p class="text-xs text-slate-500 mt-1" x-text="available.length ? 'Gli username autorizzati sono fissati nella configurazione del server (ADMIN_USERNAMES).' : 'Tutti gli username autorizzati hanno già un account.'"></p>
+    <p class="text-xs text-slate-400 mt-1" x-text="available.length ? 'Gli username autorizzati sono fissati nella configurazione del server (ADMIN_USERNAMES).' : 'Tutti gli username autorizzati hanno già un account.'"></p>
     {{ f.errorsOf("username") }}
   </div>
   {{ f.input("confirm_password", "La tua password", type="password", required=true, help="Per confermare l'operazione. Verrà generata una password temporanea, valida 24 ore, da comunicare al collega.", attrs='autocomplete="current-password"') }}

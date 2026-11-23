@@ -8,7 +8,8 @@ mainWidth: max-w-none
 {% include "partials/loading.njk" %}
 <template x-if="state === 'ready'">
 <div class="w-full">
-  <nav class="text-sm text-slate-400 mb-4 max-w-2xl mx-auto">
+  <h1 class="sr-only" x-text="`Quiz: ${mc?.title || ''}`"></h1>
+  <nav class="text-sm text-slate-400 mb-4 max-w-2xl mx-auto" aria-label="Quiz">
     <a :href="mcUrl()" class="hover:text-slate-200">← Esci dal quiz</a>
   </nav>
 
@@ -16,8 +17,8 @@ mainWidth: max-w-none
   <template x-if="!feedback">
     <div id="quiz-card" class="mx-auto rounded-2xl border border-slate-800 bg-slate-900/50 p-6"
          :class="wide ? 'w-full max-w-none' : 'max-w-2xl'">
-      <div class="flex items-center justify-between text-xs text-slate-500 mb-3">
-        <span x-text="`Domanda ${index + 1} di ${questions.length}`"></span>
+      <div class="flex items-center justify-between text-xs text-slate-400 mb-3">
+        <h2 data-card-title tabindex="-1" class="outline-hidden" x-text="`Domanda ${index + 1} di ${questions.length}`"></h2>
         <span class="rounded-md bg-slate-800 px-2 py-0.5" x-text="q?.qtype_label"></span>
       </div>
       <div class="h-1.5 w-full rounded-full bg-slate-800 mb-5 overflow-hidden">
@@ -26,13 +27,24 @@ mainWidth: max-w-none
 
       <div class="prose prose-invert max-w-none mb-5" x-html="q?.prompt_html"></div>
 
+      {# «Conferma risposta» sempre in basso a sinistra; il confronto di codice è dentro
+         codeCompare (Sync e schermo intero, con la conferma in fondo a sinistra). #}
       <form @submit.prevent="submit()">
-        {% include "partials/question-inputs.njk" %}
-        <p x-show="submitError" class="mt-3 text-sm text-rose-300" x-text="submitError"></p>
-        <button type="submit" :disabled="busy"
-          class="mt-6 w-full rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-60">
-          Conferma risposta
-        </button>
+        <div x-data="codeCompare" @keydown.escape.window="escape()" @keydown.tab="trap($event)"
+             :role="full ? 'dialog' : null" :aria-modal="full ? 'true' : null" :aria-label="full ? 'Confronto a schermo intero' : null"
+             :class="full ? 'fixed inset-0 z-[60] flex flex-col gap-3 bg-slate-950 p-3 sm:p-4' : ''">
+          <div :class="full ? 'flex min-h-0 flex-1 flex-col' : ''">
+            {% include "partials/question-inputs.njk" %}
+          </div>
+          <p x-show="submitError" role="alert" class="mt-3 text-sm text-rose-300" x-text="submitError"></p>
+          <div class="mt-6 flex flex-wrap items-center gap-3" :class="full ? '!mt-0' : ''">
+            <button type="submit" :disabled="busy || !chosen"
+              class="rounded-xl bg-emerald-500 px-6 py-3 font-semibold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-60">
+              Conferma risposta
+            </button>
+            <span x-show="!chosen" class="text-xs text-slate-400">Scegli la risposta, poi premi «Conferma risposta».</span>
+          </div>
+        </div>
       </form>
     </div>
   </template>
@@ -41,18 +53,18 @@ mainWidth: max-w-none
   <template x-if="feedback">
     <div id="quiz-card" class="mx-auto rounded-2xl border bg-slate-900/50 p-6"
          :class="[wide ? 'w-full max-w-none' : 'max-w-2xl', feedback?.correct ? 'border-emerald-500/50' : 'border-rose-500/50']">
-      <div class="flex items-center justify-between text-xs text-slate-500 mb-3">
-        <span x-text="`Domanda ${index + 1} di ${questions.length}`"></span>
+      <div class="flex items-center justify-between text-xs text-slate-400 mb-3">
+        <h2 data-card-title tabindex="-1" class="outline-hidden" x-text="`Esito della domanda ${index + 1} di ${questions.length}`"></h2>
         <span class="rounded-md bg-slate-800 px-2 py-0.5" x-text="q?.qtype_label"></span>
       </div>
 
       <template x-if="feedback?.correct">
-        <div class="reveal-pop mb-4 flex items-center gap-3 rounded-xl bg-emerald-500 px-4 py-3 text-slate-950" role="status">
+        <div class="reveal-pop mb-4 flex items-center gap-3 rounded-xl bg-emerald-500 px-4 py-3 text-slate-950">
           <span class="text-3xl leading-none" aria-hidden="true">🎉</span><span class="text-xl font-extrabold">Risposta corretta!</span>
         </div>
       </template>
       <template x-if="!feedback?.correct">
-        <div class="reveal-pop mb-4 flex items-center gap-3 rounded-xl bg-rose-500 px-4 py-3 text-slate-950" role="status">
+        <div class="reveal-pop mb-4 flex items-center gap-3 rounded-xl bg-rose-500 px-4 py-3 text-slate-950">
           <span class="text-3xl font-black leading-none" aria-hidden="true">✗</span><span class="text-xl font-extrabold">Risposta sbagliata: ecco quella giusta</span>
         </div>
       </template>
@@ -66,7 +78,7 @@ mainWidth: max-w-none
 
       <template x-if="feedback?.explanation_html">
         <div class="mt-4 rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-          <div class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Spiegazione</div>
+          <div class="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Spiegazione</div>
           <div class="prose prose-invert prose-sm max-w-none" x-html="feedback?.explanation_html"></div>
         </div>
       </template>

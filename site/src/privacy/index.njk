@@ -1,0 +1,74 @@
+---
+layout: layouts/base.njk
+title: Privacy · Secure Code Academy
+---
+<article class="prose prose-invert mx-auto max-w-3xl">
+  <h1>Informativa sulla privacy</h1>
+  <p class="text-sm text-slate-400">Ultimo aggiornamento: novembre 2026.</p>
+
+  <h2>Chi tratta i dati</h2>
+  <p>Il titolare del trattamento è <strong>Francesco Ceruzzi</strong>. Per qualunque richiesta sui tuoi dati usa i contatti
+    indicati su <a href="https://fceruzzi.github.io" rel="noopener">fceruzzi.github.io</a>.</p>
+  <p>Secure Code Academy è uno strumento di formazione interna sulla sicurezza del codice, rivolto a persone maggiorenni.
+    Non ci sono account per i visitatori, pagamenti, pubblicità, newsletter o strumenti di tracciamento.</p>
+
+  <h2>Quali dati, perché e per quanto tempo</h2>
+  <h3>Chi consulta corsi, slide e quiz</h3>
+  <p>Nessun dato personale. Le risposte ai quiz dei microcorsi vengono corrette dal server e non vengono salvate: il
+    risultato resta solo nel tuo browser, finché chiudi la scheda.</p>
+
+  <h3>Chi partecipa a un torneo</h3>
+  <ul>
+    <li><strong>Nome scelto e personaggio</strong>: compaiono agli altri partecipanti, all'organizzatore e in classifica.
+      Non serve il tuo nome vero: scegli qualcosa che non ti dispiace mostrare.</li>
+    <li><strong>Risposte, punti e orari delle risposte</strong>: servono a calcolare la classifica e il report del torneo.</li>
+    <li><strong>Codice di partecipazione</strong>: una stringa casuale salvata nel tuo browser, che ti fa rientrare nel torneo.</li>
+    <li><strong>Rete di provenienza</strong>: serve solo a fermare gli abusi all'iscrizione (troppe iscrizioni o troppi PIN
+      sbagliati dalla stessa rete). Non salviamo l'indirizzo IP: ne teniamo un'impronta (hash) con un valore casuale
+      diverso per ogni torneo, e la cancelliamo quando il torneo finisce.</li>
+  </ul>
+  <p>I dati di un torneo restano finché l'organizzatore lo elimina. Puoi cancellare i tuoi in qualunque momento con il
+    pulsante <strong>«Esci ed elimina i miei dati»</strong>, nella sala d'attesa e nella classifica finale: spariscono nome,
+    personaggio, risposte e punti.</p>
+
+  <h3>Chi amministra il sito</h3>
+  <ul>
+    <li><strong>Nome utente e password</strong> (la password solo in forma cifrata con un algoritmo a senso unico).</li>
+    <li><strong>Registro delle attività</strong> del pannello (chi ha fatto cosa, con l'indirizzo IP): serve alla sicurezza
+      del pannello e si cancella dopo 180 giorni.</li>
+    <li><strong>Tentativi di accesso</strong> per indirizzo IP e per nome utente: servono a bloccare chi prova a indovinare
+      le password e scadono dopo pochi minuti.</li>
+    <li><strong>Dispositivi riconosciuti</strong>: un codice casuale nel browser, e sul server solo la sua impronta, con una scadenza.</li>
+  </ul>
+
+  <h2>Base giuridica</h2>
+  <p>Il legittimo interesse del titolare a organizzare attività di formazione e a proteggere il servizio dagli abusi
+    (art. 6, par. 1, lett. f del GDPR) e, per chi partecipa a un torneo, la richiesta stessa di partecipare
+    (art. 6, par. 1, lett. b).</p>
+
+  <h2>Chi ospita i dati</h2>
+  <ul>
+    <li><strong>GitHub Pages</strong> (GitHub, Inc.) pubblica le pagine del sito.</li>
+    <li><strong>Cloudflare</strong> (Cloudflare, Inc.) esegue il server dell'applicazione e conserva il database.</li>
+  </ul>
+  <p>Come ogni servizio di hosting, questi fornitori possono registrare per breve tempo dati tecnici delle richieste
+    (per esempio l'indirizzo IP) per far funzionare e proteggere la loro infrastruttura, secondo le loro informative.</p>
+
+  <h2>Cookie e archiviazione nel browser</h2>
+  <p>Il sito non usa cookie. Usa l'archiviazione del browser (localStorage e sessionStorage) solo per farlo funzionare,
+    quindi non serve il consenso; nessuno di questi dati serve a profilarti:</p>
+  <ul>
+    <li><code>sca_t_…</code>: il codice di partecipazione al torneo in corso (localStorage);</li>
+    <li><code>sca_lb</code>, <code>sca_lb_pin</code>, <code>sca_cc_sync</code>: classifica laterale aperta o fissata e «Sync» del confronto di codice (localStorage);</li>
+    <li><code>quiz_…</code>: domande e risultati del quiz che stai facendo (sessionStorage);</li>
+    <li><code>sca_flash</code>: i messaggi da mostrare nella pagina successiva (sessionStorage);</li>
+    <li><code>sca_admin_token</code>, <code>sca_admin_user</code>: la sessione del pannello, solo per gli amministratori (sessionStorage);</li>
+    <li><code>sca_admin_device</code>: il dispositivo riconosciuto, solo per gli amministratori (localStorage).</li>
+  </ul>
+  <p>Puoi cancellarli in qualunque momento dalle impostazioni del browser.</p>
+
+  <h2>I tuoi diritti</h2>
+  <p>Puoi chiedere di accedere ai tuoi dati, correggerli, cancellarli, limitarne il trattamento o opporti, scrivendo al
+    titolare con i contatti indicati sopra. Hai anche il diritto di presentare un reclamo al Garante per la protezione dei
+    dati personali (<a href="https://www.garanteprivacy.it" rel="noopener">garanteprivacy.it</a>).</p>
+</article>

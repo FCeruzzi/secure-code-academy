@@ -1,32 +1,62 @@
-{#- CODE_COMPARISON in risposta: due «editor» a più file, si sceglie cliccando il
-    pannello (il radio). Richiede nello scope Alpine: q, sel; `required` per il quiz. #}
-<div class="grid gap-4 lg:grid-cols-2">
+{#- CODE_COMPARISON in risposta: due «editor» a più file, si sceglie cliccando il pannello.
+    Con la tastiera la scelta è il radio nell'intestazione di ogni pannello («Scegli questa
+    versione»); i file sono pulsanti e il codice una regione che si scorre con le frecce.
+    Sta dentro il componente codeCompare, che la pagina mette intorno alle risposte e al
+    pulsante di conferma (sotto, a sinistra). Sopra i pannelli «Sync» e «Full screen»; a
+    schermo intero anche il tempo del torneo (se la pagina ha clock()).
+    Scope Alpine: q, sel, full, sync, fa/fb, openFile, follow, pick; `locked` nel torneo. #}
+<div class="mb-3 flex flex-wrap items-center gap-3" :class="full ? '!mb-0' : ''">
+  <label class="inline-flex cursor-pointer select-none items-center gap-2 rounded-lg border border-slate-500 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800 transition"
+         title="Scorre i due codici insieme: stessa riga, stessa colonna, stesso file">
+    <input type="checkbox" x-model="sync" class="h-4 w-4 accent-sky-500"> <span aria-hidden="true">🔗</span> <span lang="en">Sync</span>
+  </label>
+  <button type="button" @click="full = !full" class="rounded-lg border border-slate-500 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800 transition">
+    <span x-show="!full"><span aria-hidden="true">⛶</span> <span lang="en">Full screen</span></span>
+    <span x-show="full" x-cloak><span aria-hidden="true">✕</span> <span lang="en">Exit full screen</span></span>
+  </button>
+  {% if variant == 'tournament' %}
+  <span x-show="full" x-cloak role="timer" aria-label="Tempo rimasto" class="font-mono text-lg font-bold tabular-nums" :class="timerText()" x-text="'⏱ ' + clock()"></span>
+  {% endif %}
+</div>
+<div class="grid gap-3 lg:grid-cols-2" :class="full ? 'min-h-0 flex-1 grid-rows-2 lg:grid-rows-1' : ''" role="radiogroup" aria-label="Quale versione è quella sicura o corretta?">
   <template x-for="side in ['a', 'b']" :key="side">
-    <label class="cursor-pointer block" :class="(side === 'a') !== Boolean(q?.cc_swap) ? 'order-1' : 'order-2'">
-      <input type="radio" name="choice" :value="side" x-model="sel.choice" class="peer sr-only" {% if variant == 'quiz' %}required{% endif %} @change="changed()">
-      <div x-data="{ f: 0 }"
-           class="overflow-hidden rounded-xl border border-slate-700 transition peer-checked:border-sky-500 peer-checked:ring-2 peer-checked:ring-sky-500/40">
-        <div class="flex items-center justify-between border-b border-slate-700 bg-slate-800/60 px-3 py-2 text-xs font-semibold">
-          <span class="flex items-center gap-2"><span class="flex gap-1"><span class="h-2.5 w-2.5 rounded-full bg-rose-400/70"></span><span class="h-2.5 w-2.5 rounded-full bg-amber-400/70"></span><span class="h-2.5 w-2.5 rounded-full bg-emerald-400/70"></span></span><span x-text="(side === 'a') !== Boolean(q?.cc_swap) ? q?.label_a : q?.label_b"></span></span>
-        </div>
-        <div class="flex">
-          <div class="w-36 shrink-0 border-r border-slate-800 bg-slate-950/70 py-1 h-[calc(100vh-25rem)] min-h-72 overflow-y-auto">
+    {#- Le etichette seguono la posizione, non il codice: label_a a sinistra, label_b a destra. #}
+    <div class="block min-w-0 cursor-pointer" @click="pick(side, $event)"
+         :class="[(side === 'a') !== Boolean(q?.cc_swap) ? 'order-1' : 'order-2', full ? 'min-h-0' : '']">
+      <div class="flex flex-col overflow-hidden rounded-xl border transition"
+           :class="[sel.choice === side ? 'border-sky-500 ring-2 ring-sky-500/40' : 'border-slate-700', full ? 'h-full' : '']">
+        <label class="cc-head flex cursor-pointer items-center gap-2 border-b border-slate-700 bg-slate-800/60 px-3 py-2 text-xs font-semibold">
+          <input type="radio" name="choice" :value="side" x-model="sel.choice" class="sr-only" @change="changed()" {% if variant == 'tournament' %}:disabled="locked"{% endif %}>
+          <span class="flex gap-1" aria-hidden="true"><span class="h-2.5 w-2.5 rounded-full bg-rose-400/70"></span><span class="h-2.5 w-2.5 rounded-full bg-amber-400/70"></span><span class="h-2.5 w-2.5 rounded-full bg-emerald-400/70"></span></span>
+          <span class="sr-only">Scegli questa versione:</span>
+          <span x-text="(side === 'a') !== Boolean(q?.cc_swap) ? q?.label_a : q?.label_b"></span>
+          <span class="ml-auto rounded-full px-2 py-0.5 text-[11px]" aria-hidden="true"
+                :class="sel.choice === side ? 'bg-sky-500 text-slate-950' : 'text-slate-400'"
+                x-text="sel.choice === side ? '✓ Scelta' : 'Scegli'"></span>
+        </label>
+        {#- Altezza fissa, così il codice scorre dentro il pannello; a schermo intero, il resto della finestra. #}
+        <div class="flex h-[calc(100vh-20rem)] min-h-[22rem]" :class="full ? 'min-h-0 flex-1 !h-auto !min-h-0' : ''">
+          <div class="w-36 shrink-0 overflow-y-auto border-r border-slate-800 bg-slate-950/70 py-1" role="group"
+               :aria-label="`File di ${(side === 'a') !== Boolean(q?.cc_swap) ? q?.label_a : q?.label_b}`">
             <template x-for="(file, i) in ((side === 'a' ? q?.files_a : q?.files_b) || [])" :key="i">
-              <button type="button" @click.prevent="f = i" :title="file.name"
-                :class="f === i ? 'bg-slate-800 text-emerald-300' : 'text-slate-400 hover:bg-slate-800/50'"
-                class="flex w-full items-center gap-1.5 px-2.5 py-1 text-left font-mono text-xs">
-                <span class="text-slate-600">📄</span><span class="truncate" x-text="file.name || 'codice'"></span>
+              <button type="button" @click.stop="openFile(side, i)" :title="file.name"
+                :aria-current="(side === 'a' ? fa : fb) === i ? 'true' : null"
+                :class="(side === 'a' ? fa : fb) === i ? 'bg-slate-800 text-emerald-300' : 'text-slate-400 hover:bg-slate-800/50'"
+                class="flex w-full items-center gap-1.5 px-2.5 py-1 text-left font-mono text-xs" :aria-label="file.name">
+                <span class="text-slate-400" aria-hidden="true">📄</span><span class="truncate" x-text="file.name || 'codice'"></span>
               </button>
             </template>
           </div>
-          <div class="min-w-0 flex-1 bg-slate-950 h-[calc(100vh-25rem)] min-h-72">
+          <div :data-side="side" class="min-w-0 flex-1 bg-slate-950">
             <template x-for="(file, i) in ((side === 'a' ? q?.files_a : q?.files_b) || [])" :key="i">
-              <pre x-show="f === i" class="highlight h-full overflow-auto p-3 text-sm leading-6"><code x-html="file.html"></code></pre>
+              <pre x-show="(side === 'a' ? fa : fb) === i" :data-name="file.name" @scroll="follow($el, side)"
+                   tabindex="0" role="region" :aria-label="`${(side === 'a') !== Boolean(q?.cc_swap) ? q?.label_a : q?.label_b}: ${file.name || 'codice'}`"
+                   class="highlight h-full overflow-auto overscroll-contain p-3 text-[13px] leading-5 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-sky-400"><code x-html="file.html"></code></pre>
             </template>
           </div>
         </div>
       </div>
-    </label>
+    </div>
   </template>
 </div>
-<p class="mt-3 text-xs text-slate-500">📁 Naviga i file con il menu a lato di ogni versione, poi <strong>seleziona la versione sicura/corretta</strong> cliccando sul suo pannello.</p>
+<p x-show="!full" class="mt-3 text-xs text-slate-400"><span aria-hidden="true">👆</span> Apri i file dal menu a lato di ogni versione, poi seleziona la versione sicura/corretta cliccando sul suo pannello.</p>

@@ -72,6 +72,13 @@ playerRoutes.post("/:token/join", async (c) => {
   return c.json(unwrap(res));
 });
 
+// Il partecipante esce e cancella i suoi dati (nome, risposte, punti).
+playerRoutes.post("/:token/leave", async (c) => {
+  const token = await tokenParam(c);
+  const res = await room(c.env, token).leave(c.req.header("X-Participant") || null);
+  return c.json({ message: unwrap(res) });
+});
+
 playerRoutes.post("/:token/answer", async (c) => {
   const token = await tokenParam(c);
   const body = await readJson<{ submission?: unknown }>(c);

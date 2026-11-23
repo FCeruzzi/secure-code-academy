@@ -1,0 +1,9 @@
+{#- «Esci ed elimina i miei dati»: per chi partecipa (me), nella sala d'attesa, nella pagina
+    finale e nella classifica. Toglie nome, personaggio, risposte e punti (tournamentPage.leave). #}
+<template x-if="me">
+  <div class="mt-8 border-t border-slate-800 pt-4 text-center">
+    <button type="button" @click="leave()" :disabled="busy"
+            class="rounded-lg px-3 py-1.5 text-sm text-rose-300 hover:bg-rose-500/10 hover:text-rose-200 transition disabled:opacity-60">Esci ed elimina i miei dati</button>
+    <p class="mt-1 text-xs text-slate-400">Toglie da questo torneo il tuo nome, il personaggio, le risposte e i punti.</p>
+  </div>
+</template>

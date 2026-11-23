@@ -6,12 +6,13 @@
 // richiesta controlla comunque se una scadenza è passata (advanceIfDue).
 import { DurableObject } from "cloudflare:workers";
 import type { Env } from "../env";
-import { shortToken } from "../lib/auth";
+import { safeEqual, shortToken } from "../lib/auth";
 import { uniqueSlug } from "../lib/http";
 import { randomInt, shuffled } from "../lib/random";
 import {
   answerTexts,
   grade,
+  hasChoice,
   parseSubmission,
   publicQuestion,
   questionSeed,
@@ -29,6 +30,7 @@ import {
   cleanDisplayName,
   DEFAULT_START_DELAY_SECONDS,
   MAX_PARTICIPANTS,
+  nameKey,
 } from "./rules";
 
 // Chi importava queste regole da qui continua a trovarle.
@@ -83,8 +85,14 @@ export const MAX_PIN_FAILURES = 30;
 const PIN_WINDOW_MS = 10 * 60_000;
 const newPin = () => String(randomInt(1_000_000)).padStart(6, "0");
 
-/** Due nomi sono lo stesso nome se differiscono solo per maiuscole e spazi. */
-const nameKey = (name: string) => name.toLocaleLowerCase("it").replace(/\s+/g, " ").trim();
+/**
+ * Oltre al limite per rete, uno per tutto il torneo: chi prova i PIN da tante reti
+ * diverse si ferma a PIN_GLOBAL_MAX_FAILURES tentativi sbagliati in PIN_WINDOW_MS, poi
+ * le iscrizioni restano sospese per PIN_PAUSE_MS (un PIN nuovo le riapre subito).
+ */
+export const PIN_GLOBAL_MAX_FAILURES = 100;
+const PIN_PAUSE_MS = 5 * 60_000;
+const ALL_NETWORKS = "*";
 
 export type Status = "DRAFT" | "OPEN" | "RUNNING" | "CLOSED";
 export type Phase = "QUESTION" | "REVEAL" | "INTERMISSION";
@@ -117,6 +125,11 @@ interface RunState {
   round_mix?: Counts | null;
   /** PIN di iscrizione mentre le iscrizioni sono aperte (solo per il pannello). */
   join_pin?: string | null;
+  /**
+   * Sale del torneo per la rete degli iscritti: dell'indirizzo si salva solo un hash, che
+   * non si confronta con quello di un altro torneo e si cancella a torneo concluso.
+   */
+  net_salt?: string;
 }
 
 type State = TournamentConfig & RunState;
@@ -284,8 +297,25 @@ export class TournamentRoom extends DurableObject<Env> {
 
   // --- Transizioni ------------------------------------------------------------------
 
+  /**
+   * Le transizioni di stato una alla volta. Il Durable Object serve una richiesta alla
+   * volta solo fra un await e l'altro: durante le scritture su D1 ne può entrare
+   * un'altra, e due «prossimo round» (o l'allarme e un «avanti») insieme salterebbero un
+   * passo. In fila, la seconda trova lo stato già cambiato e lo ricontrolla.
+   */
+  private queue: Promise<unknown> = Promise.resolve();
+  private exclusive<T>(fn: () => Promise<T>): Promise<T> {
+    const run = this.queue.then(fn, fn);
+    this.queue = run.catch(() => undefined);
+    return run;
+  }
+
   /** Avanza secondo l'orologio del server. Restituisce true se lo stato è cambiato. */
-  private async advanceIfDue(now = Date.now()): Promise<boolean> {
+  private advanceIfDue(now = Date.now()): Promise<boolean> {
+    return this.exclusive(() => this.advanceIfDueNow(now));
+  }
+
+  private async advanceIfDueNow(now: number): Promise<boolean> {
     const s = this.state;
     if (!s || s.status !== "RUNNING") return false;
     if (s.run_phase === "QUESTION") {
@@ -365,7 +395,21 @@ export class TournamentRoom extends DurableObject<Env> {
     s.run_phase = "QUESTION";
     s.reveal_started_at = null;
     this.sql.exec("UPDATE participants SET finished = 1, finished_at = ?", now);
+    // Le reti servivano solo contro gli abusi all'iscrizione: a torneo concluso non servono più.
+    this.sql.exec("DELETE FROM join_networks");
+    this.sql.exec("DELETE FROM pin_failures");
     this.save();
+  }
+
+  /** La rete di chi si iscrive, come hash con il sale del torneo (vedi net_salt). */
+  private async netKey(network: string): Promise<string> {
+    const s = this.state!;
+    if (!s.net_salt) {
+      s.net_salt = shortToken() + shortToken();
+      this.save();
+    }
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${s.net_salt}|${network}`));
+    return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
   }
 
   private async advanceAfterReveal(now: number): Promise<void> {
@@ -538,57 +582,65 @@ export class TournamentRoom extends DurableObject<Env> {
 
   /** `mix`: domande per tipo in ogni round, già verificate sul pool (planRounds). */
   async start(mix: Counts): Promise<Result<string>> {
-    const s = this.state;
-    if (!s) return fail(404, "Torneo non trovato.");
-    if (s.status !== "OPEN") return fail(400, "La gara si avvia solo a iscrizioni aperte.");
-    const now = Date.now();
-    s.round_mix = mix;
-    s.status = "RUNNING";
-    s.started_at = now;
-    s.finished_at = null;
-    await this.startRound(1, now);
-    await this.scheduleAlarm();
-    await this.mirror();
-    return ok("Gara avviata! 🏁");
+    return this.exclusive(async () => {
+      const s = this.state;
+      if (!s) return fail(404, "Torneo non trovato.");
+      if (s.status !== "OPEN") return fail(400, "La gara si avvia solo a iscrizioni aperte.");
+      const now = Date.now();
+      s.round_mix = mix;
+      s.status = "RUNNING";
+      s.started_at = now;
+      s.finished_at = null;
+      await this.startRound(1, now);
+      await this.scheduleAlarm();
+      await this.mirror();
+      return ok("Gara avviata! 🏁");
+    });
   }
 
   async startNextRound(): Promise<Result<string>> {
-    const s = this.state;
-    if (!s) return fail(404, "Torneo non trovato.");
-    if (s.status !== "RUNNING" || s.run_phase !== "INTERMISSION") return fail(400, "Nessun round da avviare.");
-    await this.startRound(s.current_round + 1, Date.now());
-    await this.scheduleAlarm();
-    await this.mirror();
-    return ok(`Round ${s.current_round} avviato!`);
+    return this.exclusive(async () => {
+      const s = this.state;
+      if (!s) return fail(404, "Torneo non trovato.");
+      if (s.status !== "RUNNING" || s.run_phase !== "INTERMISSION") return fail(400, "Nessun round da avviare.");
+      await this.startRound(s.current_round + 1, Date.now());
+      await this.scheduleAlarm();
+      await this.mirror();
+      return ok(`Round ${s.current_round} avviato!`);
+    });
   }
 
   /** «Mostra risposta e prosegui» durante la domanda, «Salta al prossimo» durante il reveal. */
   async next(): Promise<Result<string>> {
-    const s = this.state;
-    if (!s) return fail(404, "Torneo non trovato.");
-    if (s.status !== "RUNNING") return ok("");
-    const now = Date.now();
-    if (s.run_phase === "QUESTION") this.enterReveal(now);
-    else if (s.run_phase === "REVEAL") await this.advanceAfterReveal(now);
-    await this.scheduleAlarm();
-    await this.mirror();
-    return ok("");
+    return this.exclusive(async () => {
+      const s = this.state;
+      if (!s) return fail(404, "Torneo non trovato.");
+      if (s.status !== "RUNNING") return ok("");
+      const now = Date.now();
+      if (s.run_phase === "QUESTION") this.enterReveal(now);
+      else if (s.run_phase === "REVEAL") await this.advanceAfterReveal(now);
+      await this.scheduleAlarm();
+      await this.mirror();
+      return ok("");
+    });
   }
 
   async finishNow(): Promise<Result<string>> {
-    const s = this.state;
-    if (!s) return fail(404, "Torneo non trovato.");
-    if (s.status !== "RUNNING") return ok("Torneo terminato.");
-    const now = Date.now();
-    if (s.run_phase === "QUESTION") {
-      const item = this.currentItem();
-      this.backfillTimeouts(item, now);
-      this.scoreQuestion(item);
-    }
-    this.close(now);
-    await this.scheduleAlarm();
-    await this.mirror();
-    return ok("Torneo terminato.");
+    return this.exclusive(async () => {
+      const s = this.state;
+      if (!s) return fail(404, "Torneo non trovato.");
+      if (s.status !== "RUNNING") return ok("Torneo terminato.");
+      const now = Date.now();
+      if (s.run_phase === "QUESTION") {
+        const item = this.currentItem();
+        this.backfillTimeouts(item, now);
+        this.scoreQuestion(item);
+      }
+      this.close(now);
+      await this.scheduleAlarm();
+      await this.mirror();
+      return ok("Torneo terminato.");
+    });
   }
 
   /** «Nuovo PIN»: il vecchio non vale più, e i PIN sbagliati si contano da capo. */
@@ -614,6 +666,20 @@ export class TournamentRoom extends DurableObject<Env> {
     return ok(`${p.display_name} non è più fra i partecipanti.`);
   }
 
+  /**
+   * Il partecipante esce dal torneo e cancella i suoi dati: nome, personaggio, risposte e
+   * punti. Vale in ogni momento, anche a torneo concluso (sparisce dalla classifica).
+   */
+  async leave(token: string | null): Promise<Result<string>> {
+    if (!this.state) return fail(404, "Torneo non trovato.");
+    const me = this.participantByToken(token);
+    if (!me) return fail(404, "Non risulti iscritto a questo torneo.");
+    this.sql.exec("DELETE FROM answers WHERE participant_id = ?", me.id);
+    this.sql.exec("DELETE FROM participants WHERE id = ?", me.id);
+    await this.mirror();
+    return ok("Sei uscito dal torneo e i tuoi dati sono stati eliminati.");
+  }
+
   /** Pagina «Gestisci»: stato, iscritti e domande estratte. */
   async manageInfo() {
     if (await this.advanceIfDue()) {
@@ -636,6 +702,8 @@ export class TournamentRoom extends DurableObject<Env> {
     return {
       status: s.status,
       join_pin: s.status === "OPEN" ? (s.join_pin ?? null) : null,
+      // Tanti PIN sbagliati da reti diverse: qualcuno li sta provando. Un PIN nuovo li rende inutili.
+      pin_attack: s.status === "OPEN" && this.pinFailures(ALL_NETWORKS, Date.now()) >= PIN_GLOBAL_MAX_FAILURES / 2,
       participants: this.participants().map(publicParticipant),
       items,
     };
@@ -675,6 +743,7 @@ export class TournamentRoom extends DurableObject<Env> {
       reveal_ms: this.revealDeadline() ?? 0,
       now_ms: now,
       participants: participants.map((p) => ({ ...publicParticipant(p), answered: answered.has(p.id) })),
+      pin_attack: s.status === "OPEN" && this.pinFailures(ALL_NETWORKS, now) >= PIN_GLOBAL_MAX_FAILURES / 2,
     };
   }
 
@@ -703,10 +772,16 @@ export class TournamentRoom extends DurableObject<Env> {
     const topicRows = [...topics.values()]
       .map((r) => ({ ...r, pct: r.total ? Math.round((r.correct * 100) / r.total) : 0 }))
       .sort((a, b) => b.pct - a.pct || a.name.localeCompare(b.name));
+    // Un oggetto `data` per domanda: i blocchi della riga errata si calcolano una volta.
+    const parsed = new Map<number, QuestionData>();
+    const dataOf = (a: { question_id: number; data: string }) => {
+      if (!parsed.has(a.question_id)) parsed.set(a.question_id, JSON.parse(a.data));
+      return parsed.get(a.question_id)!;
+    };
     const partRows = this.participants().map((p) => {
       const mine = answers.filter((a) => a.participant_id === p.id);
       const rows = mine.map((a) => {
-        const data = JSON.parse(a.data);
+        const data = dataOf(a);
         const submitted = JSON.parse(a.submitted);
         const g = grade(a.qtype, data, submitted);
         const [yourText, correctText] = answerTexts(questionSeed(a.question_id, a.participant_id), a.qtype, data, submitted, g.solution);
@@ -923,6 +998,27 @@ export class TournamentRoom extends DurableObject<Env> {
 
   // --- RPC: giocatori ----------------------------------------------------------------
 
+  /** PIN sbagliati ancora in conto per una rete (o per ALL_NETWORKS, tutto il torneo). */
+  private pinFailures(net: string, now: number): number {
+    const row = this.sql.exec<{ n: number; expires_at: number }>("SELECT n, expires_at FROM pin_failures WHERE net = ?", net).toArray()[0];
+    return row && row.expires_at > now ? row.n : 0;
+  }
+
+  /** Conta un PIN sbagliato (finestra fissa di PIN_WINDOW_MS dal primo) e restituisce il totale. */
+  private countPinFailure(net: string, now: number): number {
+    return this.sql
+      .exec<{ n: number }>(
+        `INSERT INTO pin_failures (net, n, expires_at) VALUES (?1, 1, ?2)
+         ON CONFLICT(net) DO UPDATE SET n = CASE WHEN expires_at < ?3 THEN 1 ELSE n + 1 END,
+           expires_at = CASE WHEN expires_at < ?3 THEN ?2 ELSE expires_at END
+         RETURNING n`,
+        net,
+        now + PIN_WINDOW_MS,
+        now,
+      )
+      .one().n;
+  }
+
   async join(
     token: string | null,
     displayName: unknown,
@@ -939,25 +1035,22 @@ export class TournamentRoom extends DurableObject<Env> {
     // Il PIN prima di tutto il resto. Niente 403/409 qui: per il sito vogliono dire
     // «torneo concluso» e «iscrizioni chiuse».
     const now = Date.now();
-    const failures = this.sql
-      .exec<{ n: number; expires_at: number }>("SELECT n, expires_at FROM pin_failures WHERE net = ?", network)
-      .toArray()[0];
-    if (failures && failures.expires_at > now && failures.n >= MAX_PIN_FAILURES) {
+    network = await this.netKey(network);
+    if (this.pinFailures(ALL_NETWORKS, now) >= PIN_GLOBAL_MAX_FAILURES) {
+      return fail(429, "Troppi PIN sbagliati: le iscrizioni sono sospese per qualche minuto. Chiedi all'organizzatore un nuovo PIN.");
+    }
+    if (this.pinFailures(network, now) >= MAX_PIN_FAILURES) {
       return fail(429, "Troppi PIN sbagliati da questa rete: riprova tra qualche minuto o chiedi all'organizzatore un nuovo PIN.");
     }
     const given = String(pin ?? "").replace(/\D/g, "");
     if (!given) return fail(400, "Inserisci il PIN che ti ha dato l'organizzatore.");
-    if (!s.join_pin || given !== s.join_pin) {
-      this.sql.exec(
-        `INSERT INTO pin_failures (net, n, expires_at) VALUES (?, 1, ?)
-         ON CONFLICT(net) DO UPDATE SET n = CASE WHEN expires_at < ? THEN 1 ELSE n + 1 END,
-           expires_at = CASE WHEN expires_at < ? THEN ? ELSE expires_at END`,
-        network,
-        now + PIN_WINDOW_MS,
-        now,
-        now,
-        now + PIN_WINDOW_MS,
-      );
+    // Confronto a tempo costante: il tempo di risposta non dice quante cifre sono giuste.
+    if (!s.join_pin || !safeEqual(given, s.join_pin)) {
+      this.countPinFailure(network, now);
+      if (this.countPinFailure(ALL_NETWORKS, now) >= PIN_GLOBAL_MAX_FAILURES) {
+        // Raggiunto il tetto: sospensione di PIN_PAUSE_MS da adesso.
+        this.sql.exec("UPDATE pin_failures SET expires_at = ? WHERE net = ?", now + PIN_PAUSE_MS, ALL_NETWORKS);
+      }
       return fail(400, "PIN non corretto: controlla quello che ti ha dato l'organizzatore.");
     }
     const name = cleanDisplayName(displayName);
@@ -1001,23 +1094,18 @@ export class TournamentRoom extends DurableObject<Env> {
     if (s.status !== "RUNNING" || s.run_phase !== "QUESTION" || !item || !dl || !started || now > dl) {
       return ok({ accepted: false });
     }
-    const submitted = parseSubmission(item.qtype, submission);
-    // La scelta multipla si conferma con un pulsante e poi resta quella: chi ha
-    // confermato conta fra «Hanno risposto», e non può più cambiare idea.
-    if (item.qtype === "MULTIPLE_CHOICE") {
-      const prev = this.sql.exec("SELECT 1 FROM answers WHERE participant_id = ? AND question_id = ?", me.id, item.question_id).toArray();
-      if (prev.length) return fail(409, "Hai già confermato la risposta: non si può più cambiare.");
-    }
-    // Gli altri tipi: l'ultima selezione vale e resta modificabile fino al reveal. Il bonus
-    // velocità conta dall'ultima modifica: se contasse la prima, si potrebbe cliccare
-    // subito a caso e correggere dopo tenendo il bonus.
+    // «Conferma risposta», per ogni tipo di domanda: vale la prima conferma, poi la
+    // risposta non cambia più. answered_at è il momento della conferma, ed è da lì che
+    // conta il bonus velocità. Una scelta mai confermata non conta: al reveal è un
+    // tempo scaduto.
+    if (!hasChoice(item.qtype, submission)) return fail(400, "Scegli una risposta prima di confermare.");
+    const prev = this.sql.exec("SELECT 1 FROM answers WHERE participant_id = ? AND question_id = ?", me.id, item.question_id).toArray();
+    if (prev.length) return fail(409, "Hai già confermato la risposta: non si può più cambiare.");
     this.sql.exec(
-      `INSERT INTO answers (participant_id, question_id, submitted, answered_at) VALUES (?, ?, ?, ?)
-       ON CONFLICT(participant_id, question_id) DO UPDATE SET submitted = excluded.submitted,
-         answered_at = excluded.answered_at, timed_out = 0`,
+      "INSERT INTO answers (participant_id, question_id, submitted, answered_at) VALUES (?, ?, ?, ?)",
       me.id,
       item.question_id,
-      JSON.stringify(submitted),
+      JSON.stringify(parseSubmission(item.qtype, submission)),
       now,
     );
     return ok({ accepted: true });

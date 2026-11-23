@@ -16,12 +16,12 @@ navActive: tornei
 <div class="overflow-x-auto rounded-xl border border-slate-800">
   <table class="w-full text-sm">
     <thead class="bg-slate-900/70 text-slate-400 text-left">
-      <tr><th class="px-4 py-3">Torneo</th><th class="px-4 py-3">Stato</th><th class="px-4 py-3">Partecipanti</th><th class="px-4 py-3"></th></tr>
+      <tr><th class="px-4 py-3">Torneo</th><th class="px-4 py-3">Stato</th><th class="px-4 py-3">Partecipanti</th><th class="px-4 py-3"><span class="sr-only">Azioni</span></th></tr>
     </thead>
     <tbody class="divide-y divide-slate-800">
       <template x-for="t in tournaments" :key="t.id">
         <tr>
-          <td class="px-4 py-3"><span class="font-medium" x-text="t.title"></span><div class="text-xs text-slate-500" x-text="`${t.course_count} cors${t.course_count === 1 ? 'o' : 'i'}`"></div></td>
+          <td class="px-4 py-3"><span class="font-medium" x-text="t.title"></span><div class="text-xs text-slate-400" x-text="`${t.course_count} cors${t.course_count === 1 ? 'o' : 'i'}`"></div></td>
           <td class="px-4 py-3"><span class="rounded-sm bg-slate-800 px-2 py-0.5 text-xs" x-text="statusLabel(t.status)"></span></td>
           <td class="px-4 py-3" x-text="t.participant_count"></td>
           <td class="px-4 py-3 text-right whitespace-nowrap">
@@ -33,7 +33,7 @@ navActive: tornei
         </tr>
       </template>
       <template x-if="!tournaments.length">
-        <tr><td colspan="4" class="px-4 py-6 text-center text-slate-500">Nessun torneo.</td></tr>
+        <tr><td colspan="4" class="px-4 py-6 text-center text-slate-400">Nessun torneo.</td></tr>
       </template>
     </tbody>
   </table>

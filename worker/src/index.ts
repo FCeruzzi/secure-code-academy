@@ -2,7 +2,8 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import type { AppEnv } from "./env";
-import { HttpError } from "./lib/http";
+import { ipKey } from "./lib/auth";
+import { BIG_BODY_BYTES, BODY_BYTES, HttpError } from "./lib/http";
 import { authRoutes, requireAdmin } from "./routes/admin-auth";
 import { catalogRoutes } from "./routes/admin-catalog";
 import { questionRoutes } from "./routes/admin-questions";
@@ -37,8 +38,40 @@ app.use("*", async (c, next) => {
   c.header("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   c.header("X-Content-Type-Options", "nosniff");
   c.header("Referrer-Policy", "same-origin");
+  // Uso interno: nessuna risposta dell'API nei motori di ricerca.
+  c.header("X-Robots-Tag", "noindex, nofollow");
   c.header("X-Frame-Options", "DENY");
   c.header("Cache-Control", "no-store");
+});
+
+/** Un limite di richieste superato? Senza binding (test, sviluppo) o se il servizio non risponde, no. */
+async function overLimit(limiter: RateLimit | undefined, key: string): Promise<boolean> {
+  if (!limiter) return false;
+  try {
+    return !(await limiter.limit({ key })).success;
+  } catch {
+    return false;
+  }
+}
+
+const JOIN_PATH = /^\/api\/t\/[^/]+\/join$/;
+
+// Prima di tutto il resto (D1, Durable Object): troppe richieste dallo stesso indirizzo, o
+// un corpo troppo grande, si fermano qui. Gli import accettano file più grandi.
+app.use("/api/*", async (c, next) => {
+  if (c.req.method === "OPTIONS") return next();
+  const ip = ipKey(c.req.header("CF-Connecting-IP") || "unknown");
+  const path = c.req.path;
+  const action = c.req.method === "POST" && (path === "/api/admin/login" || JOIN_PATH.test(path));
+  if ((await overLimit(c.env.API_LIMIT, ip)) || (action && (await overLimit(c.env.ACTION_LIMIT, `${path.endsWith("/join") ? "join" : "login"}:${ip}`)))) {
+    c.header("Retry-After", "60");
+    return c.json({ error: "Troppe richieste: riprova fra un minuto." }, 429);
+  }
+  const max = path.endsWith("/import") ? BIG_BODY_BYTES : BODY_BYTES;
+  if (Number(c.req.header("Content-Length") || 0) > max) {
+    return c.json({ error: "Richiesta troppo grande." }, 413);
+  }
+  return next();
 });
 
 app.use("/api/admin/*", async (c, next) => (c.req.path === "/api/admin/login" ? next() : requireAdmin(c, next)));

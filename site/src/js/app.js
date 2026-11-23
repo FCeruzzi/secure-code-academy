@@ -3,6 +3,7 @@ import Alpine from "alpinejs";
 import * as adminPages from "./admin/index.js";
 import { config, safeUrl, shareSession } from "./core.js";
 import {
+  codeCompare,
   coursePage,
   courseListPage,
   flashMessages,
@@ -13,6 +14,7 @@ import {
   quizPlayPage,
   quizResultsPage,
   quizStartPage,
+  sideBoard,
   slidePage,
   tournamentPage,
 } from "./public.js";
@@ -30,6 +32,8 @@ const components = {
   quizPlayPage,
   quizResultsPage,
   tournamentPage,
+  sideBoard,
+  codeCompare,
   ...adminPages,
 };
 

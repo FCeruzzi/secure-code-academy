@@ -1,0 +1,15 @@
+{#- «Conferma risposta» e lo stato della risposta, in basso a sinistra sotto le risposte
+    del torneo (per ogni tipo di domanda). Scope Alpine: locked, chosen, busy, confirm(). #}
+<template x-if="locked">
+  <div class="min-w-[16rem] flex-1 rounded-lg border border-sky-500/30 bg-sky-500/10 px-4 py-2.5 text-sm text-sky-200" role="status">
+    ✓ <strong class="font-semibold">Risposta confermata</strong> — non si può più cambiare. <span class="text-sky-300/70">In attesa degli altri…</span>
+  </div>
+</template>
+<template x-if="!locked">
+  <div class="flex flex-wrap items-center gap-3">
+    <button type="button" @click="confirm()" :disabled="busy || !chosen"
+      class="rounded-lg bg-sky-500 px-5 py-2.5 font-semibold text-slate-950 hover:bg-sky-400 transition disabled:opacity-50">✔ Conferma risposta</button>
+    <span x-show="chosen" class="text-xs text-amber-300/80" role="status">● In attesa di conferma: la risposta conta solo dopo «Conferma risposta».</span>
+    <span x-show="!chosen" class="text-xs text-slate-400">Scegli la risposta, poi premi «Conferma risposta»: conta solo dopo la conferma e il bonus velocità si calcola da quel momento.</span>
+  </div>
+</template>

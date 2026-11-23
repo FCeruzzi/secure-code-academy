@@ -24,7 +24,7 @@ navActive: amministratori
   <p class="text-sm text-slate-300 mb-3" x-text="pending.label"></p>
   <label for="f-confirm_password" class="block text-sm font-medium mb-1 text-slate-300">La tua password</label>
   <input id="f-confirm_password" type="password" x-model="form.confirm_password" required autocomplete="current-password" x-init="$el.focus()"
-         class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden font-[inherit]">
+         class="w-full rounded-lg bg-slate-950 border border-slate-500 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden font-[inherit]">
   {{ f.errorsOf("confirm_password") }}
   <div class="flex gap-3 mt-4">
     <button type="submit" :disabled="busy" class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-60">Conferma</button>
@@ -35,7 +35,7 @@ navActive: amministratori
 <div class="overflow-x-auto rounded-xl border border-slate-800">
   <table class="w-full text-sm">
     <thead class="bg-slate-900/70 text-slate-400 text-left">
-      <tr><th class="px-4 py-3">Username</th><th class="px-4 py-3">Ruolo</th><th class="px-4 py-3">Stato</th><th class="px-4 py-3">Ultimo accesso</th><th class="px-4 py-3"></th></tr>
+      <tr><th class="px-4 py-3">Username</th><th class="px-4 py-3">Ruolo</th><th class="px-4 py-3">Stato</th><th class="px-4 py-3">Ultimo accesso</th><th class="px-4 py-3"><span class="sr-only">Azioni</span></th></tr>
     </thead>
     <tbody class="divide-y divide-slate-800">
       <template x-for="a in admins" :key="a.id">
@@ -65,13 +65,13 @@ navActive: amministratori
         </tr>
       </template>
       <template x-if="!admins.length">
-        <tr><td colspan="5" class="px-4 py-6 text-center text-slate-500">Nessun account.</td></tr>
+        <tr><td colspan="5" class="px-4 py-6 text-center text-slate-400">Nessun account.</td></tr>
       </template>
     </tbody>
   </table>
 </div>
 
-<p class="mt-4 text-xs text-slate-500">
+<p class="mt-4 text-xs text-slate-400">
   Gli amministratori sono solo gli username fissati nella configurazione del server
   (<code>ADMIN_USERNAMES</code>). I consulenti li crea un amministratore con lo username che
   preferisce: lavorano solo sui contenuti (corsi, microcorsi, slide, banca domande e quiz), non

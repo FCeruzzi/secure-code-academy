@@ -205,6 +205,29 @@ export function notify(text, level = "success") {
   window.dispatchEvent(new CustomEvent("sca-flash", { detail: { text, color: LEVEL_COLORS[level] || "sky" } }));
 }
 
+/**
+ * Fa leggere un testo a chi usa un lettore di schermo, senza mostrarlo: lo scrive nella
+ * regione nascosta del layout (#sca-live, o #sca-alert per gli avvisi urgenti). Svuotata e
+ * riscritta un attimo dopo, così anche lo stesso testo due volte viene riletto.
+ */
+export function announce(text, urgent = false) {
+  const region = document.getElementById(urgent ? "sca-alert" : "sca-live");
+  if (!region || !text) return;
+  region.textContent = "";
+  setTimeout(() => (region.textContent = text), 60);
+}
+
+/**
+ * Porta il focus sul titolo della scheda appena comparsa (`[data-card-title]` dentro `root`),
+ * ma solo se il focus si è perso con la scheda precedente: chi sta leggendo la classifica o
+ * un altro pannello resta dov'è.
+ */
+export function focusCardTitle(root) {
+  const active = document.activeElement;
+  if (active && active !== document.body && active.isConnected) return;
+  root?.querySelector("[data-card-title]")?.focus({ preventScroll: false });
+}
+
 // --- API ----------------------------------------------------------------------------
 
 export class ApiError extends Error {

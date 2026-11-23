@@ -3,6 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  {#- Uso interno: niente motori di ricerca. Un robots.txt qui non servirebbe: GitHub Pages lo
+      legge solo alla radice del dominio. #}
+  <meta name="robots" content="noindex, nofollow">
   {#- GitHub Pages non permette header HTTP propri: la policy è in un meta.
       Niente 'unsafe-inline' negli script: il sito non ha script inline, quindi un
       eventuale `javascript:` o handler iniettato non parte. 'unsafe-eval' serve ad
@@ -18,14 +21,18 @@
   <script defer src="/assets/app.js?v={{ site.version }}"></script>
 </head>
 <body class="h-full bg-slate-950 text-slate-100 antialiased selection:bg-emerald-500/30">
+<a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-emerald-500 focus:px-4 focus:py-2 focus:font-semibold focus:text-slate-950">Salta al contenuto</a>
+{#- Gli annunci per chi usa un lettore di schermo (nuova domanda, esito, tempo): li scrive announce() in core.js. #}
+<div id="sca-live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+<div id="sca-alert" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
 <div class="min-h-full flex flex-col">
   <header class="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-sm">
     <div class="mx-auto max-w-6xl px-4 h-16 flex items-center justify-between gap-4">
       <a href="/" class="flex items-center gap-2 font-semibold tracking-tight">
-        <span class="text-2xl">🛡️</span>
+        <span class="text-2xl" aria-hidden="true">🛡️</span>
         <span class="text-lg">Secure Code <span class="text-emerald-400">Academy</span></span>
       </a>
-      <nav class="flex items-center gap-1 text-sm" x-data="navBar">
+      <nav class="flex items-center gap-1 text-sm" x-data="navBar" aria-label="Menu principale">
         <template x-if="loggedIn">
           <div class="flex items-center gap-1">
             <a href="/admin/" class="px-3 py-2 rounded-lg hover:bg-slate-800/70 transition">Pannello</a>
@@ -39,18 +46,26 @@
     </div>
   </header>
 
-  <div x-data="flashMessages" x-cloak x-show="messages.length" class="mx-auto max-w-6xl w-full px-4 mt-4 space-y-2">
+  {#- Messaggi: annunciati da un lettore di schermo (role=status), e con un'icona oltre al colore. #}
+  <div x-data="flashMessages" role="status" aria-live="polite" class="mx-auto max-w-6xl w-full px-4 space-y-2" :class="messages.length ? 'mt-4' : ''">
     <template x-for="(m, i) in messages" :key="i">
-      <div class="rounded-lg border px-4 py-3 text-sm" :class="`border-${m.color}-500/40 bg-${m.color}-500/10 text-${m.color}-200`" x-text="m.text"></div>
+      <div class="rounded-lg border px-4 py-3 text-sm" :class="`border-${m.color}-500/40 bg-${m.color}-500/10 text-${m.color}-200`">
+        <span aria-hidden="true" x-text="{ emerald: '✓ ', rose: '⚠️ ', amber: '⚠️ ', sky: 'ℹ️ ' }[m.color] || ''"></span><span class="sr-only" x-text="{ emerald: 'Fatto: ', rose: 'Errore: ', amber: 'Attenzione: ', sky: 'Informazione: ' }[m.color] || ''"></span><span x-text="m.text"></span>
+      </div>
     </template>
   </div>
 
-  <main class="flex-1 mx-auto {{ mainWidth or 'max-w-6xl' }} w-full px-4 py-8">
+  <main id="main" tabindex="-1" class="flex-1 mx-auto {{ mainWidth or 'max-w-6xl' }} w-full px-4 py-8 outline-hidden">
     {{ content | safe }}
   </main>
 
-  <footer class="border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">
-    {{ site.name }}
+  <footer class="border-t border-slate-800/80 py-6 text-center text-xs text-slate-400">
+    <p>{{ site.name }} · Titolare: <a href="https://fceruzzi.github.io" rel="noopener" class="underline-offset-2 hover:text-slate-200 hover:underline">Francesco Ceruzzi</a></p>
+    <nav aria-label="Informazioni legali" class="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1">
+      <a href="/privacy/" class="hover:text-slate-200 hover:underline">Privacy</a>
+      <a href="/termini/" class="hover:text-slate-200 hover:underline">Termini d'uso</a>
+      <a href="/crediti/" class="hover:text-slate-200 hover:underline">Crediti e licenze</a>
+    </nav>
   </footer>
 </div>
 </body>

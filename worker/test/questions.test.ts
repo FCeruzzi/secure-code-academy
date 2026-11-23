@@ -3,6 +3,8 @@ import {
   answerTexts,
   comparisonSwapped,
   grade,
+  hasChoice,
+  lineBlocks,
   parseSubmission,
   publicQuestion,
   questionSeed,
@@ -43,7 +45,15 @@ describe("grade", () => {
     const data = { correct_lines: [7, 3] };
     expect(grade("FIND_WRONG_LINE", data, { lines: ["3", 7] })).toEqual({
       correct: true,
-      solution: { correct_keys: ["0:3", "0:7"], correct_lines: ["3", "7"], chosen_keys: ["0:3", "0:7"] },
+      solution: {
+        correct_keys: ["0:3", "0:7"],
+        correct_lines: ["3", "7"],
+        correct_block_keys: ["0:3", "0:7"],
+        correct_blocks: ["3", "7"],
+        chosen_keys: ["0:3", "0:7"],
+        chosen_blocks: ["3", "7"],
+        wrong_block_starts: [],
+      },
     });
     expect(grade("FIND_WRONG_LINE", data, { lines: [3] }).correct).toBe(false);
     expect(grade("FIND_WRONG_LINE", data, { lines: ["x", 3, 7] }).correct).toBe(true);
@@ -57,7 +67,11 @@ describe("grade", () => {
     expect(grade("FIND_WRONG_LINE", PROJECT, { lines: ["0:2"] }).solution).toEqual({
       correct_keys: ["2:12"],
       correct_lines: ["data/OrderRepository.java:12"],
+      correct_block_keys: ["2:12"],
+      correct_blocks: ["data/OrderRepository.java:12"],
       chosen_keys: ["0:2"],
+      chosen_blocks: ["web/OrderController.java:2"],
+      wrong_block_starts: ["0:2"],
     });
   });
 
@@ -254,12 +268,12 @@ describe("riga errata: progetti di più file", () => {
     const old = { prompt_html: "<p>?</p>", explanation_html: "", code_lines: [{ number: 5, html: "a" }, { number: 6, html: "b" }] };
     const q = publicQuestion(4, "FIND_WRONG_LINE", data, old);
     expect(q.is_project).toBe(false);
-    expect(q.code_files).toEqual([{ index: 0, name: "codice", lines: [{ number: 5, html: "a", key: "0:5" }, { number: 6, html: "b", key: "0:6" }] }]);
+    expect(q.code_files).toEqual([{ index: 0, name: "codice", lines: [{ number: 5, html: "a", key: "0:5", block: "0:5-5" }, { number: 6, html: "b", key: "0:6", block: "0:6-6" }] }]);
     expect(grade("FIND_WRONG_LINE", data, { lines: ["0:6"] }).correct).toBe(true);
   });
 
   it("il report mostra file:riga", () => {
-    const solution = grade("FIND_WRONG_LINE", PROJECT, {}).solution;
+    const solution = grade("FIND_WRONG_LINE", PROJECT, { lines: ["0:2"] }).solution;
     expect(answerTexts(1, "FIND_WRONG_LINE", PROJECT, { lines: ["0:2"] }, solution)).toEqual([
       "riga/e web/OrderController.java:2",
       "riga/e data/OrderRepository.java:12",
@@ -328,5 +342,172 @@ describe("tournamentCopy: la copia che il torneo congela", () => {
     expect(tournamentCopy("TRUE_FALSE", tf, RENDER, () => 0).data).toBe(tf);
     const fwl = { language: "python", code: "a\nb", correct_lines: [2] };
     expect(tournamentCopy("FIND_WRONG_LINE", fwl, RENDER, () => 0).data).toBe(fwl);
+  });
+});
+
+// --- Riga errata a blocchi ------------------------------------------------------------------
+
+// Un repository Spring come quelli della banca: la riga errata (15) sta nel metodo 13–16.
+const BOOKING_REPO = `package com.acme.rooms.data;
+
+import java.util.List;
+
+@Repository
+public class BookingRepository {
+    private static final RowMapper<Booking> MAPPER = (rs, n) -> new Booking(
+        rs.getLong("id"), rs.getString("guest"));
+    private final JdbcTemplate jdbc;
+
+    public BookingRepository(JdbcTemplate jdbc) { this.jdbc = jdbc; }
+
+    @Transactional(readOnly = true)
+    public List<Booking> findByGuest(String guest) {
+        return jdbc.query("SELECT * FROM bookings WHERE guest = '" + guest + "' ORDER BY day", MAPPER);
+    }
+
+    public Optional<Booking> findById(long id) {
+        return jdbc.query("SELECT * FROM bookings WHERE id = ?", MAPPER, id).stream().findFirst();
+    }
+}`;
+
+const JAVA_PROJECT = {
+  language: "java",
+  files: [
+    { name: "data/BookingRepository.java", content: BOOKING_REPO },
+    { name: "config.json", content: '{\n  "debug": true,\n  "pool": 5\n}' },
+  ],
+  correct_lines: [{ file: "data/BookingRepository.java", line: 15 }],
+};
+
+describe("riga errata: un clic sceglie il blocco", () => {
+  it("metodi Java con le loro annotazioni; fuori dai metodi la riga sola; i file di dati a righe", () => {
+    const b = lineBlocks(JAVA_PROJECT);
+    expect(b.get("0:15")).toEqual([0, 13, 16]);
+    expect(b.get("0:13")).toEqual(b.get("0:16"));
+    expect(b.get("0:19")).toEqual([0, 18, 20]);
+    for (const n of [1, 5, 6, 7, 8, 9, 11, 21]) expect(b.get(`0:${n}`)).toEqual([0, n, n]);
+    expect(b.get("1:1")).toEqual([1, 1, 1]);
+    expect(b.get("1:2")).toEqual([1, 2, 2]);
+  });
+
+  it("JavaScript, C#, Python e Ruby", () => {
+    const project = (name: string, content: string, language = "") => ({
+      language,
+      files: [{ name, content }, { name: "x.md", content: "x" }],
+    });
+    const js = lineBlocks(project("routes.js", "const cfg = {\n  secure: false,\n};\napp.get('/x', (req, res) => {\n  const q = `${req.query.id}`;\n  res.send(q);\n});"));
+    expect(js.get("0:2")).toEqual([0, 1, 3]);
+    expect(js.get("0:5")).toEqual([0, 4, 7]);
+    const cs = lineBlocks(project("Svc.cs", "namespace Shop\n{\n    public class Svc\n    {\n        [HttpPost]\n        public IActionResult Pay(Order o)\n        {\n            return Ok();\n        }\n    }\n}"));
+    expect(cs.get("0:8")).toEqual([0, 5, 9]);
+    expect(cs.get("0:3")).toEqual([0, 3, 3]);
+    const py = lineBlocks(project("app.py", "import os\n\nclass Api:\n    @route('/x')\n    def get(\n        self, a,\n    ):\n        return os.system(a)\n\ndef other():\n    pass"));
+    expect(py.get("0:8")).toEqual([0, 4, 8]);
+    expect(py.get("0:3")).toEqual([0, 3, 3]);
+    expect(py.get("0:11")).toEqual([0, 10, 11]);
+    const rb = lineBlocks(project("ctrl.rb", "class C\n  def show\n    User.where(params[:id])\n  end\nend"));
+    expect(rb.get("0:3")).toEqual([0, 2, 4]);
+  });
+
+  it("il blocco più interno, al massimo il metodo, mai la classe", () => {
+    const code = [
+      "class Users {",
+      "    public User get(long id) {",
+      "        validate(id);",
+      "        if (id < 0) {",
+      "            throw new Bad(id);",
+      "        }",
+      "        return repo.find(id);",
+      "    }",
+      "    public void drop(long id) {",
+      "        repo.delete(id);",
+      "    }",
+      "}",
+    ].join("\n");
+    const data = { language: "java", code, correct_lines: [5] };
+    const b = lineBlocks(data);
+    expect(b.get("0:5")).toEqual([0, 4, 6]);
+    expect(b.get("0:3")).toEqual([0, 2, 8]);
+    expect(b.get("0:1")).toEqual([0, 1, 1]);
+    expect(grade("FIND_WRONG_LINE", data, { lines: ["0:4"] }).correct).toBe(true);
+    expect(grade("FIND_WRONG_LINE", data, { lines: ["0:7"] }).correct).toBe(true);
+    expect(grade("FIND_WRONG_LINE", data, { lines: ["0:10"] }).correct).toBe(false);
+    const body = { ...data, correct_lines: [3] };
+    expect(grade("FIND_WRONG_LINE", body, { lines: ["0:5"] }).correct).toBe(false);
+    expect(grade("FIND_WRONG_LINE", body, { lines: ["0:7"] }).correct).toBe(true);
+    const py = lineBlocks({
+      language: "python",
+      files: [
+        { name: "app.py", content: "def get(a):\n    check(a)\n    if a:\n        return run(a)\n    return None\n" },
+        { name: "x.md", content: "x" },
+      ],
+    });
+    expect(py.get("0:4")).toEqual([0, 3, 4]);
+    expect(py.get("0:2")).toEqual([0, 1, 5]);
+  });
+
+  it("un solo blocco di codice che è un solo metodo resta a righe", () => {
+    const one = { language: "java", code: "void run(String id) {\n  db.exec(id);\n  log(id);\n}", correct_lines: [2] };
+    expect(lineBlocks(one).get("0:2")).toEqual([0, 2, 2]);
+    const two = { language: "java", code: "void a() {\n  x();\n}\nvoid b() {\n  y();\n}", correct_lines: [2] };
+    expect(lineBlocks(two).get("0:2")).toEqual([0, 1, 3]);
+  });
+
+  it("correzione per blocco: scegliere tutto non funziona", () => {
+    const g = (lines: string[]) => grade("FIND_WRONG_LINE", JAVA_PROJECT, { lines });
+    expect(g(["0:15"]).correct).toBe(true);
+    expect(g(["0:13"]).correct).toBe(true);
+    expect(g(["0:14", "0:16"]).correct).toBe(true);
+    expect(g(["0:19"]).correct).toBe(false);
+    expect(g(["0:15", "0:19"]).correct).toBe(false);
+    const every = [...Array.from({ length: 21 }, (_, i) => `0:${i + 1}`), "1:1", "1:2", "1:3", "1:4"];
+    expect(g(every).correct).toBe(false);
+    expect(g([]).correct).toBe(false);
+    const solution = g(["0:19"]).solution;
+    expect(solution.correct_lines).toEqual(["data/BookingRepository.java:15"]);
+    expect(solution.correct_blocks).toEqual(["data/BookingRepository.java:13–16"]);
+    expect(solution.chosen_blocks).toEqual(["data/BookingRepository.java:18–20"]);
+    expect(solution.wrong_block_starts).toEqual(["0:18"]);
+    expect(solution.correct_block_keys).toContain("0:14");
+    expect(solution.chosen_keys).toEqual(["0:18", "0:19", "0:20"]);
+  });
+
+  it("la pagina riceve il blocco di ogni riga, e la soluzione resta sul server", () => {
+    const render = renderQuestion("FIND_WRONG_LINE", "?", "", JAVA_PROJECT);
+    const q = publicQuestion(1, "FIND_WRONG_LINE", JAVA_PROJECT, render);
+    const blocks = Object.fromEntries(q.code_files!.flatMap((f) => f.lines.map((l) => [l.key, l.block])));
+    expect(blocks["0:14"]).toBe("0:13-16");
+    expect(blocks["0:9"]).toBe("0:9-9");
+    expect(JSON.stringify(q)).not.toMatch(/correct_lines|"correct"/);
+  });
+
+  it("il report dice i blocchi scelti e il blocco della riga errata", () => {
+    const sub = { lines: ["0:19"] };
+    const { solution } = grade("FIND_WRONG_LINE", JAVA_PROJECT, sub);
+    expect(answerTexts(1, "FIND_WRONG_LINE", JAVA_PROJECT, sub, solution)).toEqual([
+      "riga/e data/BookingRepository.java:18–20",
+      "riga/e data/BookingRepository.java:15 (nel blocco data/BookingRepository.java:13–16)",
+    ]);
+    // A righe (un solo metodo): niente «nel blocco».
+    const one = { language: "java", code: "void run(String id) {\n  db.exec(id);\n  log(id);\n}", correct_lines: [2] };
+    const s1 = grade("FIND_WRONG_LINE", one, { lines: ["0:3"] }).solution;
+    expect(answerTexts(1, "FIND_WRONG_LINE", one, { lines: ["0:3"] }, s1)).toEqual(["riga/e 3", "riga/e 2"]);
+  });
+});
+
+describe("hasChoice: si conferma solo una scelta vera", () => {
+  it("per ogni tipo", () => {
+    expect(hasChoice("TRUE_FALSE", { answer: false })).toBe(true);
+    expect(hasChoice("TRUE_FALSE", { answer: "true" })).toBe(true);
+    expect(hasChoice("TRUE_FALSE", {})).toBe(false);
+    expect(hasChoice("TRUE_FALSE", { answer: "" })).toBe(false);
+    expect(hasChoice("MULTIPLE_CHOICE", { selected: ["b"] })).toBe(true);
+    expect(hasChoice("MULTIPLE_CHOICE", { selected: [] })).toBe(false);
+    expect(hasChoice("FIND_WRONG_LINE", { lines: ["0:3"] })).toBe(true);
+    expect(hasChoice("FIND_WRONG_LINE", { lines: ["x"] })).toBe(false);
+    expect(hasChoice("CODE_COMPARISON", { choice: "b" })).toBe(true);
+    expect(hasChoice("CODE_COMPARISON", { choice: null })).toBe(false);
+    expect(hasChoice("ALTRO", { answer: true })).toBe(false);
+    expect(hasChoice("TRUE_FALSE", null)).toBe(false);
   });
 });

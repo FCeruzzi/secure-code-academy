@@ -32,24 +32,49 @@ export const adminGuard = () => ({
 });
 
 /** Finestra di conferma: si apre con askDelete(etichetta, azione). */
+// È un dialog: il focus entra su «Annulla» (la scelta che non fa danni), Tab non ne esce e
+// alla chiusura torna sul pulsante che l'ha aperta.
 export const confirmModal = () => ({
   open: false,
   busy: false,
   label: "",
   action: null,
+  opener: null,
   init() {
     window.addEventListener("sca-confirm", (e) => {
       this.label = e.detail.label;
       this.action = e.detail.action;
+      this.opener = document.activeElement;
       this.open = true;
+      this.$nextTick(() => this.$refs.cancel?.focus());
     });
+  },
+  close() {
+    if (!this.open) return;
+    this.open = false;
+    const back = this.opener;
+    this.opener = null;
+    if (back?.isConnected) this.$nextTick(() => back.focus());
+  },
+  trap(event) {
+    const items = Array.from(this.$refs.box.querySelectorAll("button:not([disabled])"));
+    if (!items.length) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
   },
   async confirm() {
     if (!this.action) return;
     this.busy = true;
     try {
       await this.action();
-      this.open = false;
+      this.close();
     } finally {
       this.busy = false;
     }

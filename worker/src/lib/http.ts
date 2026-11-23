@@ -15,9 +15,22 @@ export class HttpError extends Error {
 export const notFound = (what = "Pagina non trovata.") => new HttpError(404, what);
 export const badRequest = (msg: string, extra: Record<string, unknown> = {}) => new HttpError(400, msg, extra);
 
+/** Il corpo più grande accettato: 1 MB, oppure 5 MB per gli import (corsi, microcorsi, banca, tornei). */
+export const BODY_BYTES = 1024 * 1024;
+export const BIG_BODY_BYTES = 5 * 1024 * 1024;
+
 export async function readJson<T = Record<string, unknown>>(c: Context): Promise<T> {
+  // Il limite vale anche senza Content-Length (corpo inviato a pezzi): si conta il testo letto.
+  const max = c.req.path.endsWith("/import") ? BIG_BODY_BYTES : BODY_BYTES;
+  let text: string;
   try {
-    const body = await c.req.json();
+    text = await c.req.text();
+  } catch {
+    throw badRequest("Il corpo della richiesta non è un JSON valido.");
+  }
+  if (text.length > max) throw new HttpError(413, "Richiesta troppo grande.");
+  try {
+    const body = JSON.parse(text);
     if (typeof body !== "object" || body === null) throw new Error();
     return body as T;
   } catch {

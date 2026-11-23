@@ -25,11 +25,11 @@ navActive: amministratori
           <td class="px-4 py-2"><span :class="actionClass(e.action)" class="rounded-md px-2 py-0.5 text-xs" x-text="actionLabel(e.action)"></span></td>
           <td class="px-4 py-2" x-text="e.target || '—'"></td>
           <td class="px-4 py-2 text-slate-400" x-text="e.details || ''"></td>
-          <td class="px-4 py-2 text-slate-500 font-mono text-xs" x-text="e.ip || ''"></td>
+          <td class="px-4 py-2 text-slate-400 font-mono text-xs" x-text="e.ip || ''"></td>
         </tr>
       </template>
       <template x-if="!entries.length">
-        <tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">Nessuna attività registrata.</td></tr>
+        <tr><td colspan="6" class="px-4 py-6 text-center text-slate-400">Nessuna attività registrata.</td></tr>
       </template>
     </tbody>
   </table>

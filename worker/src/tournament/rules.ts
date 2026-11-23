@@ -33,6 +33,40 @@ export const MAX_START_DELAY_SECONDS = 60;
 /** Tetto alle iscrizioni di un torneo. */
 export const MAX_PARTICIPANTS = 200;
 
+/**
+ * Lettere di altri alfabeti identiche a lettere latine: «Аda» con la А cirillica è un
+ * altro nome per il computer, ma lo stesso per chi guarda la classifica.
+ */
+const LOOKALIKES: Record<string, string> = {
+  // cirillico
+  "а": "a", "в": "b", "е": "e", "ё": "e", "ѕ": "s", "і": "i", "ї": "i", "ј": "j", "к": "k", "м": "m",
+  "н": "h", "о": "o", "р": "p", "с": "c", "т": "t", "у": "y", "х": "x", "һ": "h", "ԁ": "d", "ԛ": "q",
+  "ԝ": "w", "ӏ": "l", "ɡ": "g",
+  // greco
+  "α": "a", "β": "b", "γ": "y", "ε": "e", "ζ": "z", "η": "n", "ι": "i", "κ": "k", "ν": "v", "ο": "o",
+  "ρ": "p", "τ": "t", "υ": "u", "χ": "x", "ω": "w",
+  // latino «speciale»
+  "ı": "i", "ȷ": "j", "ł": "l", "ø": "o", "đ": "d", "ħ": "h",
+};
+
+/**
+ * La chiave per dire se due nomi sono lo stesso nome: senza accenti, maiuscole, spazi
+ * doppi né lettere di altri alfabeti travestite da latine. Solo per il confronto: il nome
+ * mostrato resta quello scelto.
+ */
+export function nameKey(name: string): string {
+  return Array.from(
+    String(name ?? "")
+      .normalize("NFKD")
+      .replace(/\p{M}/gu, "")
+      .toLowerCase(),
+  )
+    .map((c) => LOOKALIKES[c] ?? c)
+    .join("")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /** Caratteri invisibili o che cambiano la direzione del testo: in un nome servono solo a ingannare. */
 const INVISIBLE = /[­᠎​‌‎‏‪-‮⁠-⁤⁦-⁩﻿]/g;
 

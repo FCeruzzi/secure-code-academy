@@ -199,3 +199,40 @@
 @media (prefers-reduced-motion: reduce) {
   .reveal-pop { animation: none; }
 }
+
+/* --- Accessibilità ----------------------------------------------------------------------
+   Le scelte fatte con un radio nascosto (Vero/Falso, opzioni, personaggi): l'anello del
+   focus va sulla scheda accanto, che è quella che si vede; e la scelta si riconosce anche
+   senza colori, da un ✓. */
+.peer:focus-visible ~ .choice-card { outline: 2px solid #38bdf8; outline-offset: 2px; }
+.choice-tick { display: none; }
+.peer:checked ~ .choice-card .choice-tick { display: inline-flex; }
+
+/* Movimento ridotto: niente lampeggi, transizioni né scorrimenti animati. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Confronto di codice: il radio della versione è nascosto, il focus si vede sull'intestazione. */
+.cc-head:has(:focus-visible) { outline: 2px solid #38bdf8; outline-offset: -2px; }
+
+/* Schede in fila (corsi, presentazioni): l'ultima riga incompleta resta centrata, una scheda al
+   centro e due con il baricentro al centro. Al posto di una griglia, un flex-wrap centrato con le
+   larghezze delle colonne: 1, poi 2 da 640px e (solo .cards) 3 da 1024px. Il mezzo decimo di pixel
+   tolto evita che un arrotondamento mandi a capo l'ultima scheda di una riga piena. I <template> di
+   Alpine fra i figli non contano: non generano riquadri. */
+.cards, .cards-2 { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--cards-gap); }
+.cards { --cards-gap: 1.25rem; }
+.cards-2 { --cards-gap: 0.75rem; }
+.cards > *, .cards-2 > * { flex: 0 0 100%; min-width: 0; }
+@media (min-width: 640px) {
+  .cards > *, .cards-2 > * { flex-basis: calc((100% - var(--cards-gap)) / 2 - 0.05px); }
+}
+@media (min-width: 1024px) {
+  .cards > * { flex-basis: calc((100% - 2 * var(--cards-gap)) / 3 - 0.05px); }
+}

@@ -11,9 +11,9 @@ navActive: domande
 
   <div class="max-w-2xl">
     <div class="mb-4">
-      <label class="block text-sm font-medium mb-1 text-slate-300">File JSON delle domande <span class="text-rose-400">*</span></label>
-      <input type="file" accept="application/json,.json" x-ref="file" @change="loadFile()"
-             class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden font-[inherit]">
+      <label for="f-file" class="block text-sm font-medium mb-1 text-slate-300">File JSON delle domande <span class="text-rose-400">*</span></label>
+      <input id="f-file" type="file" accept="application/json,.json" x-ref="file" @change="loadFile()"
+             class="w-full rounded-lg bg-slate-900 border border-slate-500 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden font-[inherit]">
       <template x-if="fileError"><p class="text-xs text-rose-400 mt-1" x-text="fileError"></p></template>
     </div>
   </div>
@@ -31,12 +31,12 @@ navActive: domande
       <button type="button" @click="setAll(true)" class="rounded-md border border-slate-700 px-2.5 py-1 text-xs hover:bg-slate-800">Seleziona tutte</button>
       <button type="button" @click="setAll(false)" class="rounded-md border border-slate-700 px-2.5 py-1 text-xs hover:bg-slate-800">Nessuna</button>
       <button type="button" @click="setNewOnly()" class="rounded-md border border-slate-700 px-2.5 py-1 text-xs hover:bg-slate-800">Solo le nuove</button>
-      <span class="ml-auto text-xs text-slate-500" x-text="summary"></span>
+      <span class="ml-auto text-xs text-slate-400" x-text="summary"></span>
     </div>
     <div class="overflow-y-auto max-h-[55vh] rounded-xl border border-slate-800 mb-4">
       <table class="w-full table-fixed text-sm">
         <thead class="sticky top-0 bg-slate-900 text-slate-400 text-left">
-          <tr><th class="px-3 py-2 w-10"></th><th class="px-3 py-2">Domanda</th><th class="px-3 py-2 w-14">Tipo</th><th class="px-3 py-2 w-40">Corso</th><th class="px-3 py-2 w-24">Difficoltà</th><th class="px-3 py-2 w-36">Stato</th></tr>
+          <tr><th class="px-3 py-2 w-10"><span class="sr-only">Scelta</span></th><th class="px-3 py-2">Domanda</th><th class="px-3 py-2 w-14">Tipo</th><th class="px-3 py-2 w-40">Corso</th><th class="px-3 py-2 w-24">Difficoltà</th><th class="px-3 py-2 w-36">Stato</th></tr>
         </thead>
         <tbody class="divide-y divide-slate-800">
           <template x-for="(r, i) in rows" :key="i">

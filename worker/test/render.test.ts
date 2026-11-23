@@ -29,6 +29,13 @@ describe("renderMarkdown", () => {
     const html = renderMarkdown("![schema](img:schema)", { schema: "https://cdn.example/s.png" });
     expect(html).toContain('<img src="https://cdn.example/s.png" alt="schema">');
   });
+  it("un'immagine senza testo alternativo prende quello salvato, con l'escape", () => {
+    const images = { schema: { url: "https://cdn.example/s.png", alt: 'Schema "a tre livelli" <b>' } };
+    const html = renderMarkdown("![](img:schema) e ![mio](img:schema)", images);
+    expect(html).toContain('alt="Schema &quot;a tre livelli&quot; &lt;b&gt;"');
+    expect(html).toContain('alt="mio"');
+    expect(renderMarkdown("![](https://x.example/a.png)")).toContain('alt=""');
+  });
   it("toglie lo stile di allineamento delle tabelle", () => {
     expect(renderMarkdown("| a |\n|:-:|\n| b |")).not.toContain("style");
   });

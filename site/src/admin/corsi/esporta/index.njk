@@ -21,14 +21,14 @@ navActive: corsi
         <label class="flex items-center gap-3 font-medium">
           <input type="checkbox" :checked="node.checked" @change="toggleCourse(node, $event.target.checked)" class="h-4 w-4 accent-emerald-500">
           <span x-text="`${node.course.icon || '📘'} ${node.course.title}`"></span>
-          <span class="text-xs text-slate-500" x-text="node.course.slug"></span>
+          <span class="text-xs text-slate-400" x-text="node.course.slug"></span>
         </label>
         <div class="mt-2 ml-7 space-y-1" x-show="node.mcs.length">
           <template x-for="m in node.mcs" :key="m.mc.id">
             <label class="flex items-center gap-2 text-sm text-slate-300">
               <input type="checkbox" x-model="m.checked" @change="if (m.checked) node.checked = true" class="h-4 w-4 accent-emerald-500">
               <span x-text="m.mc.title"></span>
-              <span class="text-xs text-slate-500" x-text="`${m.mc.slide_count} slide · ${m.mc.question_count} domande`"></span>
+              <span class="text-xs text-slate-400" x-text="`${m.mc.slide_count} slide · ${m.mc.question_count} domande`"></span>
             </label>
           </template>
         </div>

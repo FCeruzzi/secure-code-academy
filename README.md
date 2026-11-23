@@ -17,10 +17,14 @@ browser ──► GitHub Pages            pagine statiche (Eleventy + Tailwind +
   risorse esterne.
 - **Teoria** in Markdown (testo, immagini, codice evidenziato), divisa in microcorsi.
 - **Quiz** con 4 tipi di domanda: Vero/Falso, scelta multipla, «individua la riga errata»,
-  confronto tra due versioni di codice.
+  confronto tra due versioni di codice. Il codice si legge come in un IDE, con i file in un menu a
+  lato; nel confronto **Sync** fa scorrere insieme le due versioni e **Full screen** le apre a tutta
+  finestra.
 - **Tornei** live: link e PIN di iscrizione dati dall'organizzatore, nome e avatar, le stesse
-  domande a tempo per tutti, soluzione dopo ogni domanda, più round, classifica in diretta,
-  monitor e report per l'organizzatore.
+  domande a tempo per tutti, soluzione dopo ogni domanda, più round, monitor e report per
+  l'organizzatore. Ogni risposta si invia con **Conferma risposta**, sempre in basso a sinistra, e
+  da lì non cambia più; quanti hanno già confermato si vede sotto la domanda. La classifica in
+  diretta è una barra laterale a scomparsa, che si può fissare con 📌.
 
 ## Sicurezza
 
@@ -66,7 +70,9 @@ Microcorso:
 «Individua la riga errata» accetta un blocco di codice (`code`, con `correct_lines` numerate da
 `start_line`) oppure un piccolo progetto: `files` (nome, contenuto, linguaggio e prima riga
 facoltativi) e `correct_lines` come `{ "file": nome, "line": numero }`. Il giocatore apre i file dal
-menu a lato e clicca la riga. Anche i file del «Confronto di codice» possono avere un `language`
+menu a lato e clicca la riga: si seleziona il blocco tra `{` e `}` che la contiene, al massimo il
+metodo (nei file di dati e di configurazione, e fuori dai blocchi, la sola riga). La risposta è
+giusta se il blocco scelto contiene la riga errata. Anche i file del «Confronto di codice» possono avere un `language`
 proprio, utile per i progetti misti (Java con YAML, HTML, SQL…).
 
 Slide, domande e spiegazioni sono in Markdown: l'HTML scritto a mano compare come testo. Le immagini si

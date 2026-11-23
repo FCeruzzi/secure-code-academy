@@ -5,10 +5,10 @@ navActive: domande
 ---
 {% macro sortTh(key, label, width) %}
 <th class="px-4 py-3 {{ width }}">
-  <button type="button" @click="sortBy('{{ key }}')" title="Ordina per {{ label }}" class="inline-flex items-center gap-1 hover:text-slate-200 transition">
+  <button type="button" @click="sortBy('{{ key }}')" title="Ordina per {{ label }}" class="inline-flex items-center gap-1 hover:text-slate-200 transition" aria-label="Ordina per {{ label }}">
     <span>{{ label }}</span>
     <span x-show="sort === '{{ key }}'" class="text-emerald-400" x-text="dir === 'asc' ? '▲' : '▼'"></span>
-    <span x-show="sort !== '{{ key }}'" class="text-slate-600">↕</span>
+    <span x-show="sort !== '{{ key }}'" class="text-slate-400">↕</span>
   </button>
 </th>
 {% endmacro %}
@@ -27,22 +27,22 @@ navActive: domande
 <div>
 <form @submit.prevent class="flex flex-wrap items-end gap-3 mb-3">
   <div>
-    <label class="block text-xs text-slate-400 mb-1">Tipo</label>
-    <select x-model="filters.qtype" @change="filter()" title="Filtra per tipo di domanda" class="rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-sm">
+    <label for="f-filters-qtype" class="block text-xs text-slate-400 mb-1">Tipo</label>
+    <select id="f-filters-qtype" x-model="filters.qtype" @change="filter()" title="Filtra per tipo di domanda" class="rounded-lg bg-slate-900 border border-slate-500 px-3 py-2 text-sm">
       <option value="">Tutti</option>
       <template x-for="t in QTYPES" :key="t[0]"><option :value="t[0]" x-text="qtypeEmoji(t[0])" :selected="t[0] === filters.qtype"></option></template>
     </select>
   </div>
   <div>
-    <label class="block text-xs text-slate-400 mb-1">Corso</label>
-    <select x-model="filters.course" @change="filter()" class="rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-sm">
+    <label for="f-filters-course" class="block text-xs text-slate-400 mb-1">Corso</label>
+    <select id="f-filters-course" x-model="filters.course" @change="filter()" class="rounded-lg bg-slate-900 border border-slate-500 px-3 py-2 text-sm">
       <option value="">Tutti</option>
       <template x-for="c in courses" :key="c.slug"><option :value="c.slug" x-text="c.title" :selected="c.slug === filters.course"></option></template>
     </select>
   </div>
   <div>
-    <label class="block text-xs text-slate-400 mb-1">Difficoltà</label>
-    <select x-model="filters.difficulty" @change="filter()" title="Filtra per difficoltà" class="rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-sm">
+    <label for="f-filters-difficulty" class="block text-xs text-slate-400 mb-1">Difficoltà</label>
+    <select id="f-filters-difficulty" x-model="filters.difficulty" @change="filter()" title="Filtra per difficoltà" class="rounded-lg bg-slate-900 border border-slate-500 px-3 py-2 text-sm">
       <option value="">Tutte</option>
       <template x-for="d in DIFFICULTIES" :key="d[0]"><option :value="String(d[0])" x-text="difficultyStars(d[0])" :selected="String(d[0]) === filters.difficulty"></option></template>
     </select>
@@ -70,8 +70,8 @@ navActive: domande
         {{ sortTh("course", "Corso", "w-40") }}
         {{ sortTh("difficulty", "Difficoltà", "w-28") }}
         {{ sortTh("language", "Linguaggio", "w-28") }}
-        <th></th>
-        <th class="px-4 py-3 w-28"></th>
+        <th><span class="sr-only">Spazio</span></th>
+        <th class="px-4 py-3 w-28"><span class="sr-only">Azioni</span></th>
       </tr>
     </thead>
     <tbody class="divide-y divide-slate-800">
@@ -80,7 +80,7 @@ navActive: domande
           <td class="px-3 py-3"><input type="checkbox" :value="q.id" x-model.number="selected" class="h-4 w-4 accent-emerald-500" :aria-label="`Seleziona la domanda ${q.id}`"></td>
           <td class="px-4 py-3">
             <div class="truncate" :title="q.summary || q.prompt" x-text="truncate(q.summary || q.prompt, 80)"></div>
-            <template x-if="!q.is_active"><span class="text-xs text-slate-500">(disattivata)</span></template>
+            <template x-if="!q.is_active"><span class="text-xs text-slate-400">(disattivata)</span></template>
           </td>
           <td class="px-4 py-3"><span :title="q.qtype_label" class="text-base" x-text="qtypeEmoji(q.qtype)"></span></td>
           <td class="px-4 py-3 text-slate-400 truncate" x-text="q.course_title || '—'"></td>
@@ -94,7 +94,7 @@ navActive: domande
         </tr>
       </template>
       <template x-if="!questions.length">
-        <tr><td colspan="8" class="px-4 py-6 text-center text-slate-500">Nessuna domanda.</td></tr>
+        <tr><td colspan="8" class="px-4 py-6 text-center text-slate-400">Nessuna domanda.</td></tr>
       </template>
     </tbody>
   </table>
@@ -105,9 +105,9 @@ navActive: domande
   <span x-text="`${count} domande · pagina ${page} di ${numPages}`"></span>
   <div class="flex items-center gap-2">
     <template x-if="page > 1"><button type="button" @click="reload(page - 1)" class="rounded-lg border border-slate-700 px-3 py-1.5 hover:bg-slate-800">‹ Prec</button></template>
-    <template x-if="page <= 1"><span class="rounded-lg border border-slate-800 px-3 py-1.5 text-slate-600">‹ Prec</span></template>
+    <template x-if="page <= 1"><span class="rounded-lg border border-slate-800 px-3 py-1.5 text-slate-400">‹ Prec</span></template>
     <template x-if="page < numPages"><button type="button" @click="reload(page + 1)" class="rounded-lg border border-slate-700 px-3 py-1.5 hover:bg-slate-800">Succ ›</button></template>
-    <template x-if="page >= numPages"><span class="rounded-lg border border-slate-800 px-3 py-1.5 text-slate-600">Succ ›</span></template>
+    <template x-if="page >= numPages"><span class="rounded-lg border border-slate-800 px-3 py-1.5 text-slate-400">Succ ›</span></template>
   </div>
 </div>
 </template>

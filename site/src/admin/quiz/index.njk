@@ -20,36 +20,36 @@ navActive: corsi
   <template x-for="it in items" :key="it.id">
     <div class="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/50 px-4 py-3">
       <div class="flex items-center gap-3 min-w-0">
-        <span class="text-xs font-mono text-slate-500" x-text="it.order"></span>
+        <span class="text-xs font-mono text-slate-400" x-text="it.order"></span>
         <span class="rounded-sm bg-slate-800 px-2 py-0.5 text-xs" x-text="it.qtype_label"></span>
         <span class="truncate" :title="it.summary || it.prompt" x-text="truncate(it.summary || it.prompt, 70)"></span>
       </div>
       <div class="flex items-center gap-1 shrink-0">
-        <button type="button" @click="move(it, 'up')" class="text-xs rounded-sm border border-slate-700 px-2 py-1 hover:bg-slate-800">↑</button>
-        <button type="button" @click="move(it, 'down')" class="text-xs rounded-sm border border-slate-700 px-2 py-1 hover:bg-slate-800">↓</button>
+        <button type="button" @click="move(it, 'up')" title="Sposta su" aria-label="Sposta su" class="text-xs rounded-sm border border-slate-700 px-2 py-1 hover:bg-slate-800">↑</button>
+        <button type="button" @click="move(it, 'down')" title="Sposta giù" aria-label="Sposta giù" class="text-xs rounded-sm border border-slate-700 px-2 py-1 hover:bg-slate-800">↓</button>
         <a :href="url('admin/domande/contenuto/', { id: it.question_id })" title="Modifica" aria-label="Modifica" class="inline-flex items-center rounded-sm border border-slate-700 px-2 py-1.5 hover:bg-slate-800">{% include "partials/icon-pencil.njk" %}</a>
         <button type="button" @click="removeItem(it)" class="text-xs rounded-sm border border-rose-700/50 text-rose-300 px-2 py-1 hover:bg-rose-500/10">Rimuovi</button>
       </div>
     </div>
   </template>
   <template x-if="!items.length">
-    <div class="rounded-xl border border-dashed border-slate-800 p-6 text-center text-slate-500">Nessuna domanda nel quiz. Aggiungine una dal banco qui sotto.</div>
+    <div class="rounded-xl border border-dashed border-slate-800 p-6 text-center text-slate-400">Nessuna domanda nel quiz. Aggiungine una dal banco qui sotto.</div>
   </template>
 </div>
 
 <h2 class="font-semibold mb-1">Aggiungi dal banco domande</h2>
-<p class="text-sm text-slate-500 mb-4">Seleziona una domanda per vederne l'anteprima con la soluzione, poi aggiungila al quiz.</p>
+<p class="text-sm text-slate-400 mb-4">Seleziona una domanda per vederne l'anteprima con la soluzione, poi aggiungila al quiz.</p>
 <template x-if="available.length">
   <div class="grid lg:grid-cols-2 gap-6">
     <div>
       <div class="flex flex-wrap items-center gap-3 mb-3">
         <input type="search" x-model="search" placeholder="Cerca nel testo della domanda…"
-               class="flex-1 min-w-48 rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-slate-100">
+               class="flex-1 min-w-48 rounded-lg bg-slate-900 border border-slate-500 px-3 py-2 text-sm text-slate-100">
         <label class="flex items-center gap-2 text-xs text-slate-400 whitespace-nowrap"
                :title="`Mostra solo le domande del corso «${course.title}», cioè quelle in tema con questo microcorso. Togli la spunta per scegliere da tutta la banca.`">
           <input type="checkbox" x-model="onlyCourse" class="h-4 w-4 rounded-sm border-slate-600 bg-slate-900 accent-emerald-500">
           <span x-text="`Solo «${course.title}»`"></span>
-          <span class="text-slate-500" aria-hidden="true">ⓘ</span>
+          <span class="text-slate-400" aria-hidden="true">ⓘ</span>
         </label>
       </div>
 
@@ -78,7 +78,7 @@ navActive: corsi
     <div>
       <h3 class="text-sm font-semibold text-slate-300 mb-2">Anteprima</h3>
       <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-4 min-h-40 text-sm">
-        <template x-if="!preview"><p class="text-slate-500">Seleziona una domanda dall'elenco per vederne l'anteprima.</p></template>
+        <template x-if="!preview"><p class="text-slate-400">Seleziona una domanda dall'elenco per vederne l'anteprima.</p></template>
         <template x-if="preview">
           {% include "admin/question-preview.njk" %}
         </template>
@@ -87,7 +87,7 @@ navActive: corsi
   </div>
 </template>
 <template x-if="!available.length">
-  <p class="text-sm text-slate-500">Nessuna altra domanda disponibile nel banco. <a href="/admin/domande/nuova/" class="text-emerald-400 hover:underline">Creane una nuova</a>.</p>
+  <p class="text-sm text-slate-400">Nessuna altra domanda disponibile nel banco. <a href="/admin/domande/nuova/" class="text-emerald-400 hover:underline">Creane una nuova</a>.</p>
 </template>
 </div>
 </template>

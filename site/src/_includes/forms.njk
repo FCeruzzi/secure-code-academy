@@ -2,16 +2,18 @@
     Lo scope Alpine deve avere `form` (i valori) ed `errors` ({campo: [messaggi]}). #}
 {% set inputClass = "w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden font-[inherit]" %}
 
-{% macro errorsOf(name) %}<template x-for="e in (errors['{{ name }}'] || [])"><p class="text-xs text-rose-400 mt-1" x-text="e"></p></template>{% endmacro %}
+{#- Gli errori stanno in un contenitore con id, collegato al campo con aria-describedby. #}
+{% macro errorsOf(name) %}<div id="f-{{ name }}-err"><template x-for="e in (errors['{{ name }}'] || [])"><p class="text-xs text-rose-400 mt-1" x-text="e"></p></template></div>{% endmacro %}
+{% macro described(name, help) %}aria-describedby="{% if help %}f-{{ name }}-help {% endif %}f-{{ name }}-err" :aria-invalid="(errors['{{ name }}'] || []).length ? 'true' : null"{% endmacro %}
 
 {% macro label(name, text, required) %}<label for="f-{{ name }}" class="block text-sm font-medium mb-1 text-slate-300">{{ text }}{% if required %} <span class="text-rose-400">*</span>{% endif %}</label>{% endmacro %}
 
 {% macro input(name, text, type="text", required=false, help="", attrs="") %}
 <div class="mb-4">
   {{ label(name, text, required) }}
-  <input id="f-{{ name }}" type="{{ type }}" x-model="form.{{ name }}" {% if required %}required{% endif %} {{ attrs | safe }}
-         class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden font-[inherit]">
-  {% if help %}<p class="text-xs text-slate-500 mt-1">{{ help | safe }}</p>{% endif %}
+  <input id="f-{{ name }}" type="{{ type }}" x-model="form.{{ name }}" {% if required %}required{% endif %} {{ attrs | safe }} {{ described(name, help) }}
+         class="w-full rounded-lg bg-slate-900 border border-slate-500 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden font-[inherit]">
+  {% if help %}<p id="f-{{ name }}-help" class="text-xs text-slate-400 mt-1">{{ help | safe }}</p>{% endif %}
   {{ errorsOf(name) }}
 </div>
 {% endmacro %}
@@ -19,9 +21,9 @@
 {% macro textarea(name, text, rows=3, required=false, help="", extra="") %}
 <div class="mb-4">
   {{ label(name, text, required) }}
-  <textarea id="f-{{ name }}" rows="{{ rows }}" x-model="form.{{ name }}" {% if required %}required{% endif %}
-            class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden font-[inherit] {{ extra }}"></textarea>
-  {% if help %}<p class="text-xs text-slate-500 mt-1">{{ help | safe }}</p>{% endif %}
+  <textarea id="f-{{ name }}" rows="{{ rows }}" x-model="form.{{ name }}" {% if required %}required{% endif %} {{ described(name, help) }}
+            class="w-full rounded-lg bg-slate-900 border border-slate-500 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden font-[inherit] {{ extra }}"></textarea>
+  {% if help %}<p id="f-{{ name }}-help" class="text-xs text-slate-400 mt-1">{{ help | safe }}</p>{% endif %}
   {{ errorsOf(name) }}
 </div>
 {% endmacro %}
@@ -29,11 +31,11 @@
 {% macro checkbox(name, text, help="") %}
 <div class="mb-4">
   <label class="flex items-center gap-2 text-sm text-slate-300 w-fit"{% if help %} title="{{ help | striptags }}"{% endif %}>
-    <input type="checkbox" x-model="form.{{ name }}" class="h-4 w-4 rounded-sm border-slate-600 bg-slate-900 accent-emerald-500">
+    <input type="checkbox" x-model="form.{{ name }}" {{ described(name, help) }} class="h-4 w-4 rounded-sm border-slate-600 bg-slate-900 accent-emerald-500">
     <span>{{ text }}</span>
-    {% if help %}<span class="text-slate-500 cursor-help" aria-hidden="true">ⓘ</span>{% endif %}
+    {% if help %}<span class="text-slate-400 cursor-help" aria-hidden="true">ⓘ</span>{% endif %}
   </label>
-  {% if help %}<p class="text-xs text-slate-500 mt-1">{{ help | safe }}</p>{% endif %}
+  {% if help %}<p id="f-{{ name }}-help" class="text-xs text-slate-400 mt-1">{{ help | safe }}</p>{% endif %}
   {{ errorsOf(name) }}
 </div>
 {% endmacro %}
@@ -42,23 +44,23 @@
 {% macro select(name, text, options, required=false, help="", blank="---------") %}
 <div class="mb-4">
   {{ label(name, text, required) }}
-  <select id="f-{{ name }}" x-model="form.{{ name }}" {% if required %}required{% endif %}
-          class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden font-[inherit]">
+  <select id="f-{{ name }}" x-model="form.{{ name }}" {% if required %}required{% endif %} {{ described(name, help) }}
+          class="w-full rounded-lg bg-slate-900 border border-slate-500 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden font-[inherit]">
     {% if blank %}<option value="">{{ blank }}</option>{% endif %}
     <template x-for="opt in {{ options }}" :key="opt[0]">
       <option :value="opt[0]" x-text="opt[1]" :selected="String(opt[0]) === String(form.{{ name }})"></option>
     </template>
   </select>
-  {% if help %}<p class="text-xs text-slate-500 mt-1">{{ help | safe }}</p>{% endif %}
+  {% if help %}<p id="f-{{ name }}-help" class="text-xs text-slate-400 mt-1">{{ help | safe }}</p>{% endif %}
   {{ errorsOf(name) }}
 </div>
 {% endmacro %}
 
 {% macro fileInput(text) %}
 <div class="mb-4">
-  <label class="block text-sm font-medium mb-1 text-slate-300">{{ text }} <span class="text-rose-400">*</span></label>
-  <input type="file" accept="application/json,.json" required x-ref="file"
-         class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden font-[inherit]">
-  <template x-if="fileError"><p class="text-xs text-rose-400 mt-1" x-text="fileError"></p></template>
+  <label for="f-file" class="block text-sm font-medium mb-1 text-slate-300">{{ text }} <span class="text-rose-400">*</span></label>
+  <input id="f-file" type="file" accept="application/json,.json" required x-ref="file" aria-describedby="f-file-err"
+         class="w-full rounded-lg bg-slate-900 border border-slate-500 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden font-[inherit]">
+  <div id="f-file-err" role="alert"><template x-if="fileError"><p class="text-xs text-rose-400 mt-1" x-text="fileError"></p></template></div>
 </div>
 {% endmacro %}

@@ -1,4 +1,5 @@
 // Domande: validazione del payload, correzione, preparazione per la pagina.
+import { type Block, blockKeys, blockOf, blockRef, fileBlocks, sortBlocks } from "./blocks";
 import { randomInt } from "./random";
 import { highlightCode, highlightLines, renderMarkdown } from "./render";
 
@@ -134,6 +135,36 @@ export function keyLabel(data: QuestionData, key: string): string {
   if (!isProject(data)) return String(n);
   const files = wrongLineFiles(data);
   return `${files[i]?.name ?? `file ${i + 1}`}:${n}`;
+}
+
+// Un clic sceglie un blocco (vedi blocks.ts). Gli stessi `data` si correggono una volta
+// per giocatore: i blocchi si calcolano una volta sola per oggetto.
+const blockCache = new WeakMap<object, Map<string, Block>>();
+
+/** {"i:n" → [i, prima, ultima]}: il blocco di ogni riga. */
+export function lineBlocks(data: QuestionData): Map<string, Block> {
+  const d = data || {};
+  let blocks = blockCache.get(d);
+  if (!blocks) {
+    blocks = fileBlocks(wrongLineFiles(d));
+    blockCache.set(d, blocks);
+  }
+  return blocks;
+}
+
+/** "data/Repo.java:18–20" (oppure "18–20" per un solo blocco di codice; una riga: "18"). */
+export function blockLabel(data: QuestionData, block: Block): string {
+  const [i, first, last] = block;
+  const lines = first === last ? String(first) : `${first}–${last}`;
+  if (!isProject(data)) return lines;
+  const files = wrongLineFiles(data);
+  return `${files[i]?.name ?? `file ${i + 1}`}:${lines}`;
+}
+
+/** I blocchi scelti, dalle righe cliccate, in ordine di file e di riga. */
+export function chosenBlocks(data: QuestionData, keys: Iterable<string>): Block[] {
+  const blocks = lineBlocks(data);
+  return sortBlocks([...keys].map((k) => blockOf(blocks, k)).filter((b): b is Block => b !== null));
 }
 
 function validateWrongLine(d: QuestionData): void {
@@ -292,16 +323,28 @@ export function grade(qtype: string, data: QuestionData, submitted: Submission |
     };
   }
   if (qtype === FIND_WRONG_LINE) {
-    const chosen = submittedKeys(s.lines);
+    // Un clic sceglie un blocco (vedi blocks.ts). Giusto quando ogni riga errata sta in un
+    // blocco scelto e ogni blocco scelto ne contiene una: scegliere tutto non funziona.
+    const blocks = lineBlocks(d);
     const expected = correctKeys(d);
     const sorted = sortKeys(expected);
+    const chosen = chosenBlocks(d, submittedKeys(s.lines));
+    const covered = new Set(chosen.flatMap((b) => [...blockKeys(b)]));
+    const holdsExpected = (b: Block) => [...blockKeys(b)].some((k) => expected.has(k));
+    const correct = expected.size > 0 && [...expected].every((k) => covered.has(k)) && chosen.every(holdsExpected);
+    const rightBlocks = sortBlocks([...expected].map((k) => blockOf(blocks, k)).filter((b): b is Block => b !== null));
     return {
-      correct: expected.size > 0 && sameSet(chosen, expected),
+      correct,
       solution: {
         correct_keys: sorted,
         correct_lines: sorted.map((k) => keyLabel(d, k)),
-        // Le righe scelte, nelle stesse chiavi, per l'avviso.
-        chosen_keys: sortKeys(chosen),
+        // Il blocco della riga errata, per il reveal («nel blocco 18–20»).
+        correct_block_keys: sortKeys(new Set(rightBlocks.flatMap((b) => [...blockKeys(b)]))),
+        correct_blocks: rightBlocks.map((b) => blockLabel(d, b)),
+        // La scelta, come righe dei suoi blocchi, e dove inizia ogni blocco sbagliato.
+        chosen_keys: sortKeys(covered),
+        chosen_blocks: chosen.map((b) => blockLabel(d, b)),
+        wrong_block_starts: chosen.filter((b) => !holdsExpected(b)).map((b) => `${b[0]}:${b[1]}`),
       },
     };
   }
@@ -312,6 +355,25 @@ export function grade(qtype: string, data: QuestionData, submitted: Submission |
     };
   }
   return { correct: false, solution: {} };
+}
+
+/**
+ * Vero quando la risposta inviata contiene davvero una scelta: un Vero/Falso vuoto
+ * altrimenti varrebbe «falso». Si conferma solo una scelta.
+ */
+export function hasChoice(qtype: string, raw: unknown): boolean {
+  const r = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>;
+  if (qtype === TRUE_FALSE) return [true, false, "true", "false"].includes(r.answer as never);
+  if (qtype === MULTIPLE_CHOICE) {
+    const sel = Array.isArray(r.selected) ? r.selected : r.selected != null ? [r.selected] : [];
+    return sel.some((x) => String(x) !== "");
+  }
+  if (qtype === FIND_WRONG_LINE) {
+    const lines = Array.isArray(r.lines) ? r.lines : String(r.lines ?? "").split(",");
+    return submittedKeys(lines.slice(0, 500)).size > 0;
+  }
+  if (qtype === CODE_COMPARISON) return r.choice === "a" || r.choice === "b";
+  return false;
 }
 
 /**
@@ -341,7 +403,8 @@ export function parseSubmission(qtype: string, raw: unknown): Submission {
 export interface CodeFile {
   index: number;
   name: string;
-  lines: { number: number; key: string; html: string }[];
+  /** `block`: "i:prima-ultima", il blocco che un clic sulla riga sceglie (solo nella domanda pubblica). */
+  lines: { number: number; key: string; html: string; block?: string }[];
 }
 
 export interface RenderedQuestion {
@@ -475,13 +538,22 @@ export function publicQuestion(id: number, qtype: string, data: QuestionData, re
     q.multiple = Boolean(d.multiple);
   } else if (qtype === FIND_WRONG_LINE) {
     // Le domande salvate prima dei progetti hanno solo code_lines nel render.
-    q.code_files = render.code_files ?? [
+    const files = render.code_files ?? [
       {
         index: 0,
         name: SINGLE_NAME,
         lines: (render.code_lines || []).map((l) => ({ ...l, key: `0:${l.number}` })),
       },
     ];
+    // Ogni riga porta il suo blocco: la pagina evidenzia quello che il clic sceglierà.
+    const blocks = lineBlocks(d);
+    q.code_files = files.map((f) => ({
+      ...f,
+      lines: f.lines.map((l) => {
+        const b = blockOf(blocks, l.key);
+        return { ...l, block: b ? blockRef(b) : `${f.index}:${l.number}-${l.number}` };
+      }),
+    }));
     q.is_project = isProject(d);
     q.language = str(d.language);
   } else if (qtype === CODE_COMPARISON) {
@@ -515,9 +587,14 @@ export function answerTexts(
     return [chosen.join("; ") || "—", correct.join("; ") || "—"];
   }
   if (qtype === FIND_WRONG_LINE) {
-    const chosen = sortKeys(submittedKeys(s.lines)).map((k) => keyLabel(d, k)).join(", ");
-    const correct = ((solution.correct_lines as unknown[]) || []).join(", ");
-    return [chosen ? `riga/e ${chosen}` : "—", correct ? `riga/e ${correct}` : "—"];
+    // Un clic sceglie un blocco (il «{ … }» più interno, al massimo il metodo; oppure la riga).
+    const given = Array.isArray(solution.chosen_blocks)
+      ? (solution.chosen_blocks as unknown[]).map(String)
+      : chosenBlocks(d, submittedKeys(s.lines)).map((b) => blockLabel(d, b));
+    const lines = ((solution.correct_lines as unknown[]) || []).map(String);
+    const methods = ((solution.correct_blocks as unknown[]) || []).map(String).filter((b) => !lines.includes(b));
+    const correct = lines.join(", ") + (methods.length ? ` (nel blocco ${methods.join(", ")})` : "");
+    return [given.length ? `riga/e ${given.join(", ")}` : "—", lines.length ? `riga/e ${correct}` : "—"];
   }
   if (qtype === CODE_COMPARISON) {
     return [comparisonLabel(seed, d, s.choice) || "—", comparisonLabel(seed, d, solution.correct) || "—"];

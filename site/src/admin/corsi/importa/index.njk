@@ -11,9 +11,9 @@ navActive: corsi
   <p x-show="consultant" class="text-sm text-amber-300 mb-4">Come consulente puoi importare solo corsi nuovi: sostituire un corso già presente è riservato agli amministratori.</p>
 
   <div class="mb-4">
-    <label class="block text-sm font-medium mb-1 text-slate-300">File JSON dei corsi <span class="text-rose-400">*</span></label>
-    <input type="file" accept="application/json,.json" x-ref="file" @change="loadFile()"
-           class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden font-[inherit]">
+    <label for="f-file" class="block text-sm font-medium mb-1 text-slate-300">File JSON dei corsi <span class="text-rose-400">*</span></label>
+    <input id="f-file" type="file" accept="application/json,.json" x-ref="file" @change="loadFile()"
+           class="w-full rounded-lg bg-slate-900 border border-slate-500 px-3 py-2 text-slate-100 focus:border-emerald-500 outline-hidden font-[inherit]">
     <template x-if="fileError"><p class="text-xs text-rose-400 mt-1" x-text="fileError"></p></template>
   </div>
 
@@ -25,7 +25,7 @@ navActive: corsi
           <label class="flex flex-wrap items-center gap-3 font-medium">
             <input type="checkbox" :checked="node.checked" :disabled="node.locked" @change="toggleCourse(node, $event.target.checked)" class="h-4 w-4 accent-emerald-500">
             <span x-text="`${node.course.icon || '📘'} ${node.course.title || node.course.slug}`"></span>
-            <span class="text-xs text-slate-500" x-text="node.course.slug"></span>
+            <span class="text-xs text-slate-400" x-text="node.course.slug"></span>
             <template x-if="node.locked"><span class="rounded-md bg-amber-500/15 text-amber-300 px-2 py-0.5 text-xs">già presente: solo un amministratore può sostituirlo</span></template>
             <template x-if="node.exists && !node.locked"><span class="rounded-md bg-amber-500/15 text-amber-300 px-2 py-0.5 text-xs">sostituisce il corso esistente</span></template>
             <template x-if="!node.exists"><span class="rounded-md bg-emerald-500/15 text-emerald-300 px-2 py-0.5 text-xs">nuovo</span></template>
@@ -35,7 +35,7 @@ navActive: corsi
               <label class="flex items-center gap-2 text-sm text-slate-300">
                 <input type="checkbox" x-model="m.checked" :disabled="node.locked" @change="if (m.checked) node.checked = true" class="h-4 w-4 accent-emerald-500">
                 <span x-text="m.bundle.microcourse?.title || m.bundle.microcourse?.slug || '—'"></span>
-                <span class="text-xs text-slate-500" x-text="`${(m.bundle.slides || []).length} slide · ${(m.bundle.quiz?.questions || []).length} domande`"></span>
+                <span class="text-xs text-slate-400" x-text="`${(m.bundle.slides || []).length} slide · ${(m.bundle.quiz?.questions || []).length} domande`"></span>
               </label>
             </template>
           </div>
@@ -65,7 +65,7 @@ navActive: corsi
       "slides": [...], "images": [...], "quiz": {"questions": [...]} }
   ]
 }</code></pre>
-    <p class="mt-2 text-xs text-slate-500">Laboratorio, presentazioni e risorse sono facoltativi: se mancano, si aggiungono dopo dalla pagina del corso.</p>
+    <p class="mt-2 text-xs text-slate-400">Laboratorio, presentazioni e risorse sono facoltativi: se mancano, si aggiungono dopo dalla pagina del corso.</p>
   </details>
 </div>
 </div>

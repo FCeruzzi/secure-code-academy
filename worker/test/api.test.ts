@@ -78,6 +78,7 @@ describe("API pubblica", () => {
     const res = await api("/api/home");
     expect(res.headers.get("Strict-Transport-Security")).toBe("max-age=31536000; includeSubDomains");
     expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    expect(res.headers.get("X-Robots-Tag")).toBe("noindex, nofollow");
     expect(res.headers.get("X-Frame-Options")).toBe("DENY");
   });
 
@@ -685,7 +686,11 @@ describe("tornei", () => {
     const { qtype, data } = items.filter((i) => i.round === round)[index];
     if (qtype === "TRUE_FALSE") return { answer: data.answer };
     if (qtype === "MULTIPLE_CHOICE") return { selected: data.correct };
-    if (qtype === "FIND_WRONG_LINE") return { lines: data.correct_lines };
+    if (qtype === "FIND_WRONG_LINE") {
+      // Un progetto indica le righe come {file, line}: la risposta usa le chiavi "file:riga".
+      const names = (data.files || []).map((f: { name: string }) => f.name);
+      return { lines: data.correct_lines.map((e: any) => (typeof e === "object" ? `${names.indexOf(e.file)}:${e.line}` : e)) };
+    }
     return { choice: data.correct };
   }
 
@@ -893,35 +898,51 @@ describe("tornei", () => {
     expect(frozen.results.map((r) => r.question_id)).toEqual([...picks].sort((a, b) => a - b));
   });
 
-  it("scelta multipla: conta fra «Hanno risposto» solo dopo la conferma, poi non cambia", async () => {
+  it("ogni domanda si conferma una volta: conta da lì, e chi non conferma va in tempo scaduto", async () => {
     const admin = await loggedIn();
-    const t = await setupTournament(admin, { pool_size: 10, num_rounds: 1 });
+    const t = await setupTournament(admin, { pool_size: 10, num_rounds: 1, time_bonus: true });
     const pin = await openTournament(admin, t.id);
-    const ada = (await api(`/api/t/${t.code}/join`, { method: "POST", json: { display_name: "Ada", avatar: "owl", pin } })).body.participant_token;
+    const join = async (name: string) =>
+      (await api(`/api/t/${t.code}/join`, { method: "POST", json: { display_name: name, avatar: "owl", pin } })).body.participant_token;
+    const ada = await join("Ada");
+    const bob = await join("Bob");
     await api(`/api/admin/tournaments/${t.id}/start`, { method: "POST", token: admin });
     await skipStartDelay(t.code);
-    let card = (await api(`/api/t/${t.code}`, { participant: ada })).body.card;
-    for (let i = 0; i < 10 && card.question.qtype !== "MULTIPLE_CHOICE"; i++) {
-      // Gli altri tipi: risposta modificabile fino al reveal.
+    const send = (who: string, submission: unknown) => api(`/api/t/${t.code}/answer`, { method: "POST", participant: who, json: { submission } });
+    const card = async (who: string) => (await api(`/api/t/${t.code}`, { participant: who })).body.card;
+    const seen = new Set<string>();
+    for (let i = 0; i < 10; i++) {
+      const q = await card(ada);
+      seen.add(q.question.qtype);
+      // Senza una scelta non si conferma: un Vero/Falso vuoto varrebbe «falso».
+      const empty = await send(ada, {});
+      expect(empty.status).toBe(400);
+      expect((await card(ada)).answered).toBe(0);
       const good = await correctSubmission(t.code);
-      expect((await api(`/api/t/${t.code}/answer`, { method: "POST", participant: ada, json: { submission: good } })).body.accepted).toBe(true);
-      expect((await api(`/api/t/${t.code}/answer`, { method: "POST", participant: ada, json: { submission: good } })).body.accepted).toBe(true);
+      if (i === 1) {
+        // La conferma arriva 30 secondi dopo l'inizio: il bonus conta da lì.
+        await shiftRoom(t.code, (s) => {
+          s.current_started_at -= 30_000;
+        });
+      }
+      expect((await send(ada, good)).body.accepted).toBe(true);
+      const after = await card(ada);
+      expect(after.answered).toBe(1);
+      expect(after.my_submission).toBeTruthy();
+      // Confermata, non cambia più: neanche con la stessa risposta.
+      expect((await send(ada, good)).status).toBe(409);
+      // Bob non conferma: al reveal è un tempo scaduto, a zero punti.
       await api(`/api/admin/tournaments/${t.id}/next`, { method: "POST", token: admin });
+      const rv = (await card(ada)).reveal;
+      expect(rv.correct).toBe(true);
+      if (i === 1) expect(rv.points).toBeGreaterThanOrEqual(149);
+      if (i === 1) expect(rv.points).toBeLessThanOrEqual(150);
+      else expect(rv.points).toBeGreaterThan(190);
+      expect((await card(bob)).reveal).toMatchObject({ correct: false, timed_out: true, points: 0 });
       await api(`/api/admin/tournaments/${t.id}/next`, { method: "POST", token: admin });
-      card = (await api(`/api/t/${t.code}`, { participant: ada })).body.card;
     }
-    expect(card.question.qtype).toBe("MULTIPLE_CHOICE");
-    expect(card.answered).toBe(0);
-    const good = await correctSubmission(t.code);
-    expect((await api(`/api/t/${t.code}/answer`, { method: "POST", participant: ada, json: { submission: good } })).body.accepted).toBe(true);
-    expect((await api(`/api/t/${t.code}`, { participant: ada })).body.card.answered).toBe(1);
-    const chosen = (good as { selected: string[] }).selected;
-    const other = card.question.options.find((o: any) => !chosen.includes(o.id)).id;
-    const again = await api(`/api/t/${t.code}/answer`, { method: "POST", participant: ada, json: { submission: { selected: [other] } } });
-    expect(again.status).toBe(409);
-    await api(`/api/admin/tournaments/${t.id}/next`, { method: "POST", token: admin });
-    expect((await api(`/api/t/${t.code}`, { participant: ada })).body.card.reveal.correct).toBe(true);
-  });
+    expect([...seen].sort()).toEqual(["CODE_COMPARISON", "FIND_WRONG_LINE", "MULTIPLE_CHOICE", "TRUE_FALSE"]);
+  }, 30_000); // dieci domande, una decina di richieste ciascuna
 
   it("all'avvio il timer parte dopo 5 secondi; prima le risposte non contano", async () => {
     const admin = await loggedIn();
@@ -1118,6 +1139,43 @@ describe("tornei", () => {
     expect((await join(fresh, "203.0.113.70")).status).toBe(200);
   });
 
+  it("PIN: oltre 100 sbagliati da reti diverse le iscrizioni si sospendono, l'organizzatore è avvisato", async () => {
+    const admin = await loggedIn();
+    const t = await setupTournament(admin);
+    const pin = await openTournament(admin, t.id);
+    const wrongPin = pin === "000000" ? "111111" : "000000";
+    const join = (p: string, ip: string, display_name = "Ada") =>
+      api(`/api/t/${t.code}/join`, { method: "POST", json: { display_name, avatar: "owl", pin: p }, headers: { "CF-Connecting-IP": ip } });
+    // Ogni rete resta sotto il suo limite (al massimo 10 tentativi), ma il torneo no.
+    for (let i = 0; i < 100; i++) expect((await join(wrongPin, `198.18.${Math.floor(i / 10)}.${i % 10}`)).status).toBe(400);
+    const manage = (await api(`/api/admin/tournaments/${t.id}/manage`, { token: admin })).body;
+    expect(manage.pin_attack).toBe(true);
+    // Sospese per tutti, anche con il PIN giusto e da una rete nuova.
+    const paused = await join(pin, "198.18.99.1");
+    expect(paused.status).toBe(429);
+    expect(paused.body.error).toContain("sospese");
+    // Un PIN nuovo le riapre e azzera l'avviso.
+    const fresh = (await api(`/api/admin/tournaments/${t.id}/pin`, { method: "POST", token: admin })).body.pin;
+    expect((await join(fresh, "198.18.99.1")).status).toBe(200);
+    expect((await api(`/api/admin/tournaments/${t.id}/manage`, { token: admin })).body.pin_attack).toBe(false);
+  }, 30_000);
+
+  it("nomi copiati con lettere di altri alfabeti o con gli accenti: sono lo stesso nome", async () => {
+    const admin = await loggedIn();
+    const t = await setupTournament(admin);
+    const pin = await openTournament(admin, t.id);
+    const join = (display_name: string, ip: string) =>
+      api(`/api/t/${t.code}/join`, { method: "POST", json: { display_name, avatar: "owl", pin }, headers: { "CF-Connecting-IP": ip } });
+    expect((await join("Ada Bob", "203.0.113.80")).status).toBe(200);
+    // А cirillica, Β greca, à accentata: in classifica sembrerebbero lo stesso partecipante.
+    for (const [i, clone] of ["\u0410da Bob", "Ada \u0392ob", "Adà Bob", "ＡＤＡ ＢＯＢ"].entries()) {
+      const res = await join(clone, `203.0.113.${81 + i}`);
+      expect(res.status, clone).toBe(400);
+      expect(res.body.error).toContain("C'è già un partecipante con questo nome");
+    }
+    expect((await join("Ada Bobby", "203.0.113.90")).status).toBe(200);
+  });
+
   it("nomi dei partecipanti: senza caratteri invisibili, e uno per persona", async () => {
     const admin = await loggedIn();
     const t = await setupTournament(admin);
@@ -1170,6 +1228,47 @@ describe("tornei", () => {
     await api(`/api/admin/tournaments/${t.id}/finish`, { method: "POST", token: admin });
     const report = (await api(`/api/admin/tournaments/${t.id}/report`, { token: admin })).body;
     expect(report.part_rows.map((r: any) => r.p.display_name)).toEqual(["Ada"]);
+  });
+
+  it("il partecipante esce ed elimina i suoi dati, anche a torneo concluso", async () => {
+    const admin = await loggedIn();
+    const t = await setupTournament(admin, { pool_size: 10, num_rounds: 1 });
+    const pin = await openTournament(admin, t.id);
+    const join = (display_name: string, ip: string) =>
+      api(`/api/t/${t.code}/join`, { method: "POST", json: { display_name, avatar: "owl", pin }, headers: { "CF-Connecting-IP": ip } });
+    const ada = (await join("Ada", "198.51.100.7")).body.participant_token;
+    const bob = (await join("Bob", "198.51.100.8")).body.participant_token;
+    // Della rete resta solo un hash con il sale del torneo, mai l'indirizzo.
+    const nets = async () => {
+      let out: string[] = [];
+      await runInDurableObject(env.TOURNAMENT.get(env.TOURNAMENT.idFromName(t.code)), (instance) => {
+        const room = instance as unknown as { sql: SqlStorage };
+        out = room.sql.exec<{ net: string }>("SELECT net FROM join_networks").toArray().map((r) => r.net);
+      });
+      return out;
+    };
+    const stored = await nets();
+    expect(stored).toHaveLength(2);
+    for (const n of stored) expect(n).toMatch(/^[0-9a-f]{64}$/);
+    expect(stored.join()).not.toContain("198.51.100");
+
+    expect((await api(`/api/t/${t.code}/leave`, { method: "POST" })).status).toBe(404);
+    const left = await api(`/api/t/${t.code}/leave`, { method: "POST", participant: bob });
+    expect(left.status).toBe(200);
+    expect(left.body.message).toContain("eliminati");
+    expect((await api(`/api/t/${t.code}`, { participant: bob })).body.me).toBeNull();
+    expect((await api(`/api/t/${t.code}`)).body.participants.map((p: any) => p.display_name)).toEqual(["Ada"]);
+
+    await api(`/api/admin/tournaments/${t.id}/start`, { method: "POST", token: admin });
+    await skipStartDelay(t.code);
+    await api(`/api/t/${t.code}/answer`, { method: "POST", participant: ada, json: { submission: await correctSubmission(t.code) } });
+    await api(`/api/admin/tournaments/${t.id}/finish`, { method: "POST", token: admin });
+    // A torneo concluso le reti si cancellano; chi esce sparisce anche dalla classifica e dal report.
+    expect(await nets()).toEqual([]);
+    expect((await api(`/api/t/${t.code}/leave`, { method: "POST", participant: ada })).status).toBe(200);
+    expect((await api(`/api/t/${t.code}`)).body.participants).toEqual([]);
+    expect((await api(`/api/admin/tournaments/${t.id}/report`, { token: admin })).body.part_rows).toEqual([]);
+    expect((await env.DB.prepare("SELECT participant_count FROM tournaments WHERE id = ?").bind(t.id).first())?.participant_count).toBe(0);
   });
 
   it("la gara congela una copia: id delle opzioni nuovi e lati a caso, stessa risposta giusta", async () => {

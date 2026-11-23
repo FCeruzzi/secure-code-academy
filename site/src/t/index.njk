@@ -36,10 +36,10 @@ title: Torneo · Secure Code Academy
       <a :href="url('t/iscriviti/', { k: code })" class="rounded-xl bg-emerald-500 px-6 py-3 font-semibold text-slate-950 hover:bg-emerald-400 transition">🚀 Unisciti al torneo</a>
     </template>
     <template x-if="!me && t.status === 'RUNNING'">
-      <p class="text-slate-500">La gara è già iniziata: non è più possibile unirsi.</p>
+      <p class="text-slate-400">La gara è già iniziata: non è più possibile unirsi.</p>
     </template>
     <template x-if="!me && t.status === 'DRAFT'">
-      <p class="text-slate-500">Il torneo non è disponibile in questo momento.</p>
+      <p class="text-slate-400">Il torneo non è disponibile in questo momento.</p>
     </template>
     <a :href="url('t/classifica/', { k: code })" class="text-sm text-amber-300 hover:underline">🏅 Vedi la classifica</a>
   </div>

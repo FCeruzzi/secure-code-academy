@@ -41,6 +41,11 @@ function timingSafeEqual(a: Uint8Array, b: Uint8Array): boolean {
   return diff === 0;
 }
 
+/** Due stringhe uguali, in un tempo che non dipende da dove differiscono (PIN, codici). */
+export function safeEqual(a: string, b: string): boolean {
+  return timingSafeEqual(enc.encode(a), enc.encode(b));
+}
+
 async function pbkdf2(password: string, salt: Uint8Array<ArrayBuffer>, iterations: number): Promise<Uint8Array> {
   const key = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveBits"]);
   const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations }, key, 256);
@@ -217,6 +222,13 @@ export const userKey = (username: string) => `user:${username.trim().toLowerCase
  */
 export async function hitLimit(db: D1Database, keys: string[]): Promise<boolean> {
   const now = Date.now();
+  // Una chiave già oltre il limite risponde subito, senza scrivere: chi insiste da un
+  // indirizzo bloccato non costa una scrittura per richiesta.
+  const blocked = await db
+    .prepare(`SELECT 1 FROM login_attempts WHERE ip IN (${keys.map(() => "?").join(",")}) AND count > ? AND expires_at >= ? LIMIT 1`)
+    .bind(...keys, LOGIN_MAX_ATTEMPTS, now)
+    .first();
+  if (blocked) return true;
   const results = await db.batch<{ count: number }>(
     keys.map((key) =>
       db
